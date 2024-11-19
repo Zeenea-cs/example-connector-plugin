@@ -1,0 +1,23 @@
+[versions]
+zeenea-public-connector-sdk = "2.0.0-RC2"
+pf4j = "3.11.0"
+jetbrains-annotations = "26.0.1"
+slf4j = "2.0.9"
+logback = "1.5.3"
+junit = "5.11.3"
+assertj = "3.26.3"
+
+[libraries]
+zeenea-public-connector-sdk = { module = "zeenea:public-connector-sdk", version.ref = "zeenea-public-connector-sdk" }
+pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
+jcl-over-slf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-api = { module = "org.junit.jupiter:junit-jupiter-api" }
+junit-params = { module = "org.junit.jupiter:junit-jupiter-params" }
+junit-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+[plugins]
+spotless = { id = "com.diffplug.spotless", version = "6.25.0" }

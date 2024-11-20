@@ -1,0 +1,92 @@
+options {
+  STATIC = false;
+  JDK_VERSION = "11";
+  JAVA_TEMPLATE_TYPE = "modern";
+  UNICODE_INPUT = true;
+}
+
+PARSER_BEGIN(CustomPropertiesParser)
+package zeenea.connector.example.property;
+
+import java.util.ArrayList;
+import java.util.List;
+import zeenea.connector.property.PropertyDefinition;
+
+class CustomPropertiesParser {
+
+  private String fromValue(String text) {
+    var sb = new StringBuilder();
+    for (int i = 1, n = text.length() - 1; i < n; ++i) {
+      char c = text.charAt(i);
+      if (c == '\\' && i < n - 1) {
+        sb.append(text.charAt(++i));
+      } else {
+        sb.append(c);
+      }
+    }
+    return sb.toString();
+  }
+
+}
+PARSER_END(CustomPropertiesParser)
+
+SKIP :
+{
+  <WHITESPACE: [
+     " ",      // regular space character
+     "\t",     // tab character
+     "\f",     // formfeed character
+     "\u0085", // 'NEXT LINE (NEL)' (U+0085)
+     "\u00A0", // 'NO-BREAK SPACE' (U+00A0)
+     "\ufeff"  // 'ZERO WIDTH NO-BREAK SPACE' (U+FEFF)
+  ]>
+| <WINDOWS_EOL : "\r\n">
+| <UNIX_EOL: "\n">
+| <OLD_MAC_EOL: "\r">
+| <COMMENT: "#" (~["\n","\r"])* >
+}
+
+/* Types */
+TOKEN:
+{
+    <STRING: "string">
+|   <LONG: "long">
+|   <TEXT: "text">
+|   <NUMBER: "number">
+|   <URL: "url">
+|   <INSTANT: "instant">
+|   <TAG: "tag">
+}
+
+TOKEN:
+{
+  <VALUE: "'" (~["'"] | "\\'" )*  "'">
+}
+
+List<CustomProperty> propertyList():
+{
+    List<CustomProperty> properties = new ArrayList<>();
+    CustomProperty property;
+}
+{
+    ( property = property() { properties.add(property); } )*
+    { return properties; }
+}
+
+CustomProperty property():
+{
+    Token code;
+    Token attribute;
+    CustomProperty property;
+}
+{
+    (
+        <STRING>         code = <VALUE> attribute = <VALUE> { property = CustomProperty.string(fromValue(code.image), fromValue(attribute.image)); }
+    |   <TAG>            code = <VALUE> attribute = <VALUE> { property = CustomProperty.tag(fromValue(code.image), fromValue(attribute.image)); }
+    |   (<LONG>)? <TEXT> code = <VALUE> attribute = <VALUE> { property = CustomProperty.longText(fromValue(code.image), fromValue(attribute.image)); }
+    |   <NUMBER>         code = <VALUE> attribute = <VALUE> { property = CustomProperty.number(fromValue(code.image), fromValue(attribute.image)); }
+    |   <URL>            code = <VALUE> attribute = <VALUE> { property = CustomProperty.url(fromValue(code.image), fromValue(attribute.image)); }
+    |   <INSTANT>        code = <VALUE> attribute = <VALUE> { property = CustomProperty.instant(fromValue(code.image), fromValue(attribute.image)); }
+    )
+    { return property; }
+}

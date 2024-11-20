@@ -1,0 +1,219 @@
+options {
+  STATIC = false;
+  JDK_VERSION = "11";
+  JAVA_TEMPLATE_TYPE = "modern";
+  UNICODE_INPUT = true;
+  TOKEN_EXTENDS = "FilterToken";
+  TOKEN_FACTORY = "FilterTokenFactory";
+}
+
+PARSER_BEGIN(RawFilterParser)
+package zeenea.connector.example.filter;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+class RawFilterParser {
+  FilterKeyDictionary keyDic = FilterKeyDictionary.of();
+
+  void checkKeyIsValid(Token token) throws FilterParsingException {
+    keyDic.checkKeyIsValid(token);
+  }
+  void checkKeyIsValid(Token token, FilterKind kind) throws FilterParsingException {
+    keyDic.checkKeyIsValid(token, kind);
+  }
+  void declareLocalKey(Token token) throws FilterParsingException {
+    keyDic.declareLocalKey(token);
+  }
+}
+
+abstract class FilterToken {
+  FilterKey key;
+  String keyName;
+  String stringLit;
+  Pattern regexLit;
+}
+
+class FilterTokenFactory {
+  public static Token newToken(int ofKind, String image) {
+    Token token = new Token(ofKind, image);
+    switch(ofKind) {
+      case RawFilterParserConstants.KEY:
+        token.keyName = image;
+        break;
+      case RawFilterParserConstants.STRING:
+        token.stringLit = Filter.fromLiteral(image);
+        break;
+      case RawFilterParserConstants.REGEX:
+        token.regexLit = regexFromLiteral(image);
+        break;}
+    return token;
+  }
+
+  private static Pattern regexFromLiteral(String image) {
+    var endIndex = image.lastIndexOf('/');
+    if (endIndex < 0) throw new IllegalStateException("Invalid regex token:" + image);
+    var pattern = image.substring(1, endIndex);
+    var flagsSpec = image.substring(endIndex+1);
+    return Pattern.compile(pattern.trim(), Filter.flags(flagsSpec));
+  }
+}
+PARSER_END(RawFilterParser)
+
+SKIP :
+{
+  <WHITESPACE: [
+     " ",      // regular space character
+     "\t",     // tab character
+     "\f",     // formfeed character
+     "\u0085", // 'NEXT LINE (NEL)' (U+0085)
+     "\u00A0", // 'NO-BREAK SPACE' (U+00A0)
+     "\ufeff"  // 'ZERO WIDTH NO-BREAK SPACE' (U+FEFF)
+  ]>
+| <WINDOWS_EOL : "\r\n">
+| <UNIX_EOL: "\n">
+| <OLD_MAC_EOL: "\r">
+| <COMMENT: "#" (~["\n","\r"])* >
+}
+
+
+/* Keyword */
+TOKEN:
+{
+  <EQUALS: "=">
+| <NOT_EQUALS: "!=">
+| <IS: "is">
+| <NOT: ("!" |"not")>
+| <NULL: "null">
+| <STARTS: "starts">
+| <ENDS: "ends">
+| <WITH: "with">
+| <CONTAINS: "contains">
+| <IN: "in">
+| <MATCH: "match">
+| <MATCHES: ("~" | "matches")>
+| <LPAREN: "(">
+| <RPAREN: ")">
+| <AND: ("&&" | "and")>
+| <OR: ("||" | "or")>
+| <ALWAYS: "always">
+| <NEVER: "never">
+| <COMMA: ",">
+| <ALL: "all">
+| <ANY: "any">
+}
+
+/* Identifier */
+TOKEN:
+{
+  <KEY: <FIRST_LETTER> (<NEXT_LETTER>)*>
+| <#FIRST_LETTER: [ "_", "a"-"z", "A"-"Z" ]>
+| <#NEXT_LETTER: [ "_", "a"-"z", "A"-"Z", "0"-"9" ]>
+}
+
+/* Literrals */
+TOKEN:
+{
+  <STRING: "'" (~["'"] | "\\'" )*  "'">
+| <REGEX: "/" ( ~["/"] | "\\/" )* "/" ( [ "d","i","x","m","s","u","U" ] )* >
+}
+
+
+Filter filter():
+{
+  Filter filter1;
+  Filter filter2 = null;
+}
+{
+  filter1 = andFilter() ( <OR> filter2 = filter() )?
+  { return filter2 != null ? Filter.or(filter1, filter2) : filter1; }
+}
+
+Filter andFilter():
+{
+  Filter filter1;
+  Filter filter2 = null;
+}
+{
+  filter1 = notFilter() ( <AND> filter2 = andFilter() )?
+  { return filter2 != null ? Filter.and(filter1, filter2) : filter1; }
+}
+
+Filter notFilter():
+{
+  boolean inverse = false;
+  Filter filter;
+}
+{
+  ( <NOT> { inverse = !inverse; } )* filter = atomicFilter()
+  { return inverse ? Filter.not(filter) : filter; }
+}
+
+Filter atomicFilter():
+{
+  Token key;
+  Token elementKey;
+  Token value;
+  Filter filter;
+  Filter elementFilter;
+  boolean inverse = false;
+  Set<String> set;
+}
+{
+  (
+    <LPAREN> filter = filter() <RPAREN>
+  | <ALWAYS>  { filter = Filter.always(); }
+  | <NEVER>  { filter = Filter.never(); }
+
+  | <ALL> elementKey = <KEY> <IN> key = <KEY> { checkKeyIsValid(key, FilterKind.LIST); declareLocalKey(elementKey); }
+        <MATCHES> elementFilter = atomicFilter() { filter = Filter.all(key.key, elementKey.key, elementFilter); }
+  | <ANY> elementKey = <KEY> <IN> key = <KEY> { checkKeyIsValid(key, FilterKind.LIST); declareLocalKey(elementKey); }
+        <MATCHES> elementFilter = atomicFilter() { filter = Filter.any(key.key, elementKey.key, elementFilter); }
+
+  | LOOKAHEAD(2) filter = equalFilter()
+  | key = <KEY> { checkKeyIsValid(key, FilterKind.TEXT); } (
+        ( <NOT> { inverse = true; } )? <IN> set = setLiteral() { filter = Filter.in(key.key, set); }
+      | <STARTS> <WITH> value = <STRING> { filter = Filter.startsWith(key.key, value.stringLit); }
+      | <ENDS> <WITH> value = <STRING> { filter = Filter.endsWith(key.key, value.stringLit); }
+      | <CONTAINS> value = <STRING> { filter = Filter.contains(key.key, value.stringLit); }
+      | <IS> ( <NOT> { inverse = true; } )? <NULL> { filter = Filter.isNull(key.key); }
+      | <MATCHES> (
+        value = <STRING> { filter = Filter.glob(key.key, value.stringLit); }
+      | value = <REGEX> { filter = Filter.regex(key.key, value.regexLit); }
+      )
+    )
+  )
+  { return inverse ? Filter.not(filter) : filter; }
+}
+
+Filter equalFilter():
+{
+  Token key;
+  Token value;
+  boolean inverse = false;
+  Filter filter;
+}
+{
+    key = <KEY> { checkKeyIsValid(key); }
+      (  <EQUALS> | <NOT_EQUALS> { inverse = true; } )
+      value = <STRING>
+    {
+      // TODO Test value is compatible with key
+      filter = Filter.isEqualTo(key.key, value.stringLit);
+      return inverse ? Filter.not(filter) : filter;
+    }
+}
+
+
+Set<String> setLiteral():
+{
+  Token str = null;
+  Set<String> set = new HashSet<>();
+}
+{
+  <LPAREN> str = <STRING> { set.add(str.stringLit); }
+     ( <COMMA> str = <STRING> { set.add(str.stringLit); } ) *
+  <RPAREN>
+  { return set; }
+}

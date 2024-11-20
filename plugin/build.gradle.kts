@@ -2,6 +2,7 @@ plugins {
     java
     distribution
     alias(libs.plugins.spotless)
+    alias(libs.plugins.javacc)
 }
 
 group = "zeenea.connector.example"
@@ -26,7 +27,11 @@ dependencies {
     compileOnly(libs.zeenea.public.connector.sdk)
     testImplementation(libs.zeenea.public.connector.sdk)
     annotationProcessor(libs.pf4j)
-
+    implementation(platform(libs.jackson.bom))
+    implementation(libs.jackson.core)
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.datatype.jdk8)
+    implementation(libs.jackson.datatype.jsr310)
     compileOnly(libs.jetbrains.annotations)
 
     /*
@@ -57,6 +62,18 @@ spotless {
     java {
         googleJavaFormat()
         targetExclude("build/generated/**")
+    }
+}
+
+tasks.compileJavacc {
+    arguments = mapOf(Pair("grammar_encoding", "UTF-8"))
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs(tasks.compileJavacc.get().outputDirectory)
+        }
     }
 }
 

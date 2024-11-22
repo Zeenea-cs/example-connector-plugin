@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.jackson.datatype.jdk8)
     implementation(libs.jackson.datatype.jsr310)
     compileOnly(libs.jetbrains.annotations)
+    implementation(project(":log"))
     implementation(project(":filter"))
     implementation(project(":custom-property"))
 

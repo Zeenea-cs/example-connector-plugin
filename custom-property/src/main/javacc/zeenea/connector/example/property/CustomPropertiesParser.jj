@@ -73,6 +73,9 @@ TOKEN:
 |   <#NEXT_LETTER: [ "-", "_", "a"-"z", "A"-"Z", "0"-"9" ]>
 }
 
+/**
+ *  A property list is a list of custom properties.
+ */
 List<CustomProperty> propertyList():
 {
     List<CustomProperty> properties = new ArrayList<>();
@@ -80,6 +83,7 @@ List<CustomProperty> propertyList():
 }
 {
     ( property = property() { properties.add(property); } )*
+    <EOF>
     { return properties; }
 }
 

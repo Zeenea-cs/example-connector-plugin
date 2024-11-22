@@ -3,7 +3,6 @@ package zeenea.connector.example;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -19,6 +18,8 @@ import zeenea.connector.common.IdentificationProperty;
 import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemReference;
 import zeenea.connector.contact.Contact;
+import zeenea.connector.example.file.FileItem;
+import zeenea.connector.example.file.FileRef;
 import zeenea.connector.example.json.JsonContact;
 import zeenea.connector.example.json.JsonItem;
 import zeenea.connector.example.json.JsonItemRef;
@@ -60,9 +61,10 @@ public class ExampleMapper {
   }
 
   public static DataProcess dataProcess(
-      JsonProcess process, Path path, CustomProperties customProperties) {
+      FileItem<JsonProcess> fileItem, CustomProperties customProperties) {
     PropertiesBuilder properties =
-        PropertiesBuilder.create().put(Metadata.PATH_MD, path.toString());
+        PropertiesBuilder.create().put(Metadata.PATH_MD, fileItem.getFileRef().getRelativePath());
+    var process = fileItem.getItem();
     customProperties(process, properties, customProperties);
 
     return DataProcess.builder()

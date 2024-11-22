@@ -1,5 +1,6 @@
 package zeenea.connector.example.log;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.Contract;
 
@@ -7,7 +8,7 @@ public class Strings {
   private static final Pattern START_OF_LINE = Pattern.compile("^", Pattern.MULTILINE);
 
   /**
-   * INdent a block of text.
+   * Indent a block of text.
    *
    * @param text The text to indent.
    * @param count The number of spaces to add.
@@ -20,5 +21,21 @@ public class Strings {
       return START_OF_LINE.matcher(text).replaceAll(" ".repeat(count));
     }
     return text;
+  }
+
+  /**
+   * Add the given prefix if the text isn't already prefixed.
+   *
+   * @param prefix The refix to add.
+   * @param text   Text to add prefix to.
+   * @return The text with the prefix added if it was not already present.
+   */
+  @Contract(value = "_, null -> null; null, _ -> fail; !null, !null -> !null", pure = true)
+  public static String ensurePrefix(String prefix, String text) {
+    Objects.requireNonNull(prefix);
+    if (text == null || prefix.isEmpty() || text.startsWith(prefix)) {
+      return text;
+    }
+    return prefix + text;
   }
 }

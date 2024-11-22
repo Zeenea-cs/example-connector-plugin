@@ -12,3 +12,5 @@ plugins {
 
 rootProject.name = "example-connector-plugin"
 include("plugin")
+include("filter")
+include("custom-property")

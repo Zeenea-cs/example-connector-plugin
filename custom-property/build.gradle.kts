@@ -1,12 +1,12 @@
 plugins {
-    java
-    distribution
+    `java-library`
     alias(libs.plugins.spotless)
+    alias(libs.plugins.javacc)
 }
 
 group = "zeenea.connector.example"
 version = System.getenv("VERSION") ?: "dev"
-description = "Example Zeenea Connector Plugin"
+description = "Zeenea Example Custom Source Property Library"
 
 repositories {
     mavenCentral()
@@ -25,15 +25,7 @@ repositories {
 dependencies {
     compileOnly(libs.zeenea.public.connector.sdk)
     testImplementation(libs.zeenea.public.connector.sdk)
-    annotationProcessor(libs.pf4j)
-    implementation(platform(libs.jackson.bom))
-    implementation(libs.jackson.core)
-    implementation(libs.jackson.databind)
-    implementation(libs.jackson.datatype.jdk8)
-    implementation(libs.jackson.datatype.jsr310)
     compileOnly(libs.jetbrains.annotations)
-    implementation(project(":filter"))
-    implementation(project(":custom-property"))
 
     /*
      * Logs
@@ -66,6 +58,18 @@ spotless {
     }
 }
 
+tasks.compileJavacc {
+    arguments = mapOf(Pair("grammar_encoding", "UTF-8"))
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs(tasks.compileJavacc.get().outputDirectory)
+        }
+    }
+}
+
 tasks.withType<JavaCompile> {
     with(options) {
         encoding = "UTF-8"
@@ -80,40 +84,10 @@ tasks.test {
 tasks.jar {
     manifest {
         attributes(
-            "Implementation-Title" to "Example Zeenea Connector Plugin",
+            "Implementation-Title" to "Zeenea Example Custom Source Property Library",
             "Implementation-Version" to project.version,
             "Implementation-Vendor" to "Zeenea <support@zeenea.com>"
         )
     }
-}
-
-/*
- * Define the plugin layout.
- */
-distributions {
-    main {
-        contents {
-            from(tasks.compileJava) {
-                into("classes")
-            }
-            from(tasks.processResources) {
-                into("classes")
-            }
-            from(configurations.runtimeClasspath) {
-                into("lib")
-                exclude("slf4j-api*.jar")
-                exclude("commons-logging*.jar")
-            }
-            from("$projectDir/src/main/plugin") {
-                expand("project_version" to project.version)
-                filteringCharset = "UTF-8"
-            }
-            into("/")
-        }
-    }
-}
-
-tasks.distTar {
-    enabled = false
 }
 

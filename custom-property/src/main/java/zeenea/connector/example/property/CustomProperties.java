@@ -2,6 +2,7 @@ package zeenea.connector.example.property;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import zeenea.connector.ConnectionConfiguration;
 import zeenea.connector.exception.InvalidConfigurationException;
 import zeenea.connector.property.PropertyDefinition;
 
@@ -53,6 +54,17 @@ public class CustomProperties {
     } catch (TokenMgrException | ParseException e) {
       throw new InvalidConfigurationException("Invalid custom properties: " + e.getMessage());
     }
+  }
+
+  /**
+   * Parse the definition of custom properties from the configuration.
+   * @param configuration Connection configuration.
+   * @param configurationField Property to read configuration from.
+   * @return The custom property repository.
+   */
+  public static CustomProperties parse(
+      ConnectionConfiguration configuration, String configurationField) {
+    return parse(configuration.getStringOptional(configurationField).orElse(""));
   }
 
   public List<CustomProperty> getProperties() {

@@ -24,7 +24,7 @@ public class FileFinder {
   }
 
   /**
-   * Find Zeenea files. A Zeenea file is a file with the extension ".zeenea".
+   * Find Zeenea files. A Zeenea file is a file with the extension.
    *
    * @param ctx Tracing context.
    * @return A list of zeenea file references.

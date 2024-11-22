@@ -1,4 +1,4 @@
-package zeenea.connector.example.dataset;
+package zeenea.connector.example.visualization;
 
 import java.util.HashSet;
 import java.util.List;
@@ -18,47 +18,59 @@ import zeenea.connector.example.filter.Filter;
 import zeenea.connector.example.json.Json;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
+import zeenea.connector.example.property.CustomProperties;
 import zeenea.connector.inventory.InventoryConnection;
 import zeenea.connector.property.PropertyDefinition;
 
-public class ExampleDatasetConnection implements InventoryConnection {
-  private static final SimpleLogger log = SimpleLogger.of(ExampleDatasetConnection.class);
+public class ExampleVisualizationConnection implements InventoryConnection {
+  private static final SimpleLogger log = SimpleLogger.of(ExampleVisualizationConnection.class);
 
-  private final ExampleDatasetConfig config;
+  /** Connection code. */
+  private final String connectionCode;
+
+  /** Custom property repository. */
+  private final CustomProperties customProperties;
+
+  /** Item filter. */
+  private final Filter filter;
+
+  /** FileFinder instance. */
   private final FileFinder fileFinder;
 
   /**
    * Create a new instance of {@code ExampleDatasetConnection}
    *
-   * @param config The connection configuration.
-   * @param fileFinder The file finder.
+   * @param connectionCode Connection code.
+   * @param customProperties Custom property repository.
+   * @param filter Item filter.
+   * @param fileFinder File finder instance.
    */
-  public ExampleDatasetConnection(ExampleDatasetConfig config, FileFinder fileFinder) {
-    this.config = Objects.requireNonNull(config);
+  public ExampleVisualizationConnection(
+      String connectionCode,
+      CustomProperties customProperties,
+      Filter filter,
+      FileFinder fileFinder) {
+    this.connectionCode = Objects.requireNonNull(connectionCode);
     this.fileFinder = Objects.requireNonNull(fileFinder);
+    this.customProperties = Objects.requireNonNull(customProperties);
+    this.filter = Objects.requireNonNull(filter);
   }
 
   @Override
   public Set<PropertyDefinition> getProperties() {
     var properties = new HashSet<PropertyDefinition>();
     properties.add(Metadata.PATH_MD);
-    properties.addAll(config.datasetProperties().getDefinitions());
-    properties.addAll(config.fieldProperties().getDefinitions());
-    properties.addAll(config.processProperties().getDefinitions());
+    properties.addAll(customProperties.getDefinitions());
     return properties;
   }
 
   @Override
   public Stream<ItemInventory> inventory() {
     // Create a context used by the logger.
-    var ctx = TracingContext.inventory(config.connectionCode());
-    log.entry("example_dataset_inventory_start")
-        .context(ctx)
-        .with("connection_code", config.connectionCode())
-        .info();
+    var ctx = TracingContext.inventory(connectionCode);
+    log.entry("example_visualization_inventory_start").context(ctx).info();
 
     // Create a file partial filter to avoid reading files that could be filtered.
-    Filter filter = config.filter();
     var fileFilter = ItemFilters.fileFilter(filter);
 
     // We use an intermediate list to be able to count items.
@@ -67,8 +79,11 @@ public class ExampleDatasetConnection implements InventoryConnection {
     List<ItemInventory> inventory =
         fileFinder.findZeeneaFiles(ctx).stream()
             .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-            .flatMap(f -> Json.readItems(ctx, f, DatasetRoot.class, DatasetRoot::getDatasets))
-            .filter(p -> filter.matches(ItemFilters.item(p, config.datasetProperties())))
+            .flatMap(
+                f ->
+                    Json.readItems(
+                        ctx, f, VisualizationRoot.class, VisualizationRoot::getVisualizations))
+            .filter(p -> filter.matches(ItemFilters.item(p, customProperties)))
             .map(
                 d ->
                     ItemInventory.of(
@@ -76,14 +91,14 @@ public class ExampleDatasetConnection implements InventoryConnection {
                         ExampleMapper.parseItemLabels(d.getItem().getId())))
             .peek(
                 i ->
-                    log.entry("example_dataset_inventory_inventory_item_found")
+                    log.entry("example_visualization_inventory_inventory_item_found")
                         .context(ctx)
                         .with("id", Ids.log(i.getItemIdentifier()))
                         .with("labels", Ids.logLabels(i.getLabels()))
                         .debug())
             .collect(Collectors.toList());
 
-    log.entry("example_dataset_inventory_success")
+    log.entry("example_visualization_inventory_success")
         .context(ctx)
         .with("item_count", inventory.size())
         .info();

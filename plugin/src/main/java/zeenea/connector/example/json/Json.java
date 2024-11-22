@@ -8,8 +8,19 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import zeenea.connector.example.file.FileItem;
+import zeenea.connector.example.file.FileRef;
+import zeenea.connector.example.log.SimpleLogger;
+import zeenea.connector.example.log.Strings;
+import zeenea.connector.example.log.TracingContext;
 
 public class Json {
+  private static final SimpleLogger log = SimpleLogger.of(Json.class);
+
   private static final JsonMapper JSON_MAPPER =
       JsonMapper.builder()
           .addModule(new Jdk8Module())
@@ -33,6 +44,42 @@ public class Json {
           String.format(
               "Failed reading file '%s' to '%s': %s", path, e.getMessage(), klass.getName()),
           e);
+    }
+  }
+
+  /**
+   * Read the content of a file.
+   *
+   * <p>If the file fails, the exception is caught, logged and an empty stream is returned.
+   *
+   * @param ctx Tracing context.
+   * @param fileRef The reference of the file.
+   * @param rootClass The root class.
+   * @param items A function to get the list of elements from the root.
+   * @param <R> The root type.
+   * @param <E> The element type.
+   * @return The stream of the file items.
+   */
+  public static <R, E> Stream<FileItem<E>> readItems(
+          TracingContext ctx, FileRef fileRef, Class<R> rootClass, Function<R, List<E>> items) {
+    // Extract the connector case by convention on the root class name.
+    var env = Strings.chopSuffix(rootClass.getSimpleName(), "Root").toLowerCase();
+    try {
+      log.entry("example_" + env + "_read_file")
+              .context(ctx)
+              .with("path", fileRef.getRelativePath())
+              .info();
+
+      return Stream.ofNullable(Json.readFromFile(fileRef.getPath(), rootClass))
+              .flatMap(root -> items.apply(root).stream())
+              .map(p -> new FileItem<>(p, fileRef));
+
+    } catch (JsonParsingException e) {
+      log.entry("example_" + env + "_read_file_failure")
+              .context(ctx)
+              .with("path", fileRef.getPath())
+              .error(e);
+      return Stream.empty();
     }
   }
 }

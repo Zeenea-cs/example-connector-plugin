@@ -19,7 +19,6 @@ import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemReference;
 import zeenea.connector.contact.Contact;
 import zeenea.connector.example.file.FileItem;
-import zeenea.connector.example.file.FileRef;
 import zeenea.connector.example.json.JsonContact;
 import zeenea.connector.example.json.JsonItem;
 import zeenea.connector.example.json.JsonItemRef;
@@ -49,6 +48,15 @@ public class ExampleMapper {
             .filter(Predicate.not(String::isEmpty))
             .map(ExampleMapper::parseIdProperty)
             .collect(Collectors.toList()));
+  }
+
+  public static List<String> parseItemLabels(String id) {
+    return ID_SEP
+        .splitAsStream(id)
+        .filter(Predicate.not(String::isEmpty))
+        .map(ExampleMapper::parseIdProperty)
+        .map(p -> p.getKey() + "=" + p.getValue())
+        .collect(Collectors.toList());
   }
 
   public static IdentificationProperty parseIdProperty(String property) {

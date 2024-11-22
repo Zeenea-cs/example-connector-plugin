@@ -27,15 +27,24 @@ public class Strings {
    * Add the given prefix if the text isn't already prefixed.
    *
    * @param prefix The refix to add.
-   * @param text   Text to add prefix to.
+   * @param text Text to add prefix to.
    * @return The text with the prefix added if it was not already present.
    */
-  @Contract(value = "_, null -> null; null, _ -> fail; !null, !null -> !null", pure = true)
+  @Contract(value = "null, _ -> fail; _, null -> null; !null, !null -> !null", pure = true)
   public static String ensurePrefix(String prefix, String text) {
     Objects.requireNonNull(prefix);
     if (text == null || prefix.isEmpty() || text.startsWith(prefix)) {
       return text;
     }
     return prefix + text;
+  }
+
+  @Contract(pure = true, value = "_, null -> fail; null, _ -> null; !null, !null -> !null")
+  public static String chopSuffix(String string, String suffix) {
+    Objects.requireNonNull(suffix);
+    if (string == null || suffix.isEmpty() || !string.endsWith(suffix)) {
+      return string;
+    }
+    return string.substring(0, string.length() - suffix.length());
   }
 }

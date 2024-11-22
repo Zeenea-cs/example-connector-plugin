@@ -23,17 +23,17 @@ public class ExampleLineageConnector implements Connector {
     // Connection code
     var connectionCode = configuration.getConnectionCode();
 
-    // Create file finder.
-    var fileFinder = FileFinder.create(configuration, "lineage");
-
     // Parse custom properties.
     var customProperties =
-        CustomProperties.parse(
-            configuration.getStringOptional(Configuration.CUSTOM_PROPERTIES_CONF).orElse(""));
+            CustomProperties.parse(
+                    configuration.getStringOptional(Configuration.CUSTOM_PROPERTIES_CONF).orElse(""));
 
     // Parser Filter.
     var filter = ItemFilters.parseFilter(configuration, customProperties);
 
-    return new ExampleLineageConnection(connectionCode, fileFinder, customProperties, filter);
+    // Create file finder. The default extension is: ".lineage.json".
+    var fileFinder = FileFinder.create(configuration, "lineage");
+
+    return new ExampleLineageConnection(connectionCode, customProperties, filter, fileFinder);
   }
 }

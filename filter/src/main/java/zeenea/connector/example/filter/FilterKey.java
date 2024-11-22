@@ -7,6 +7,20 @@ import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * A key identify a field in a filter item.
+ *
+ * <p>A key has a name that musr contain only characters, digits and underscore ("_").
+ *
+ * <p>A key can be of two kinds:
+ *
+ * <dl>
+ *   <dt>text
+ *   <dd>The value is a single text value.
+ *   <dt>list
+ *   <dd>The value is a list of text values.
+ * </dl>
+ */
 public final class FilterKey {
   private static final Pattern NAME_PATTERN = Pattern.compile("[_a-zA-Z][_a-zA-Z0-9]+");
   private final @NotNull String name;
@@ -21,18 +35,40 @@ public final class FilterKey {
     this.name = name;
   }
 
+  /**
+   * Create a new text key.
+   *
+   * @param name The name of the key.
+   * @return A new instance of the key.
+   */
   public static FilterKey text(String name) {
     return new FilterKey(FilterKind.TEXT, name);
   }
 
+  /**
+   * Create a new list key.
+   *
+   * @param name The name of the key.
+   * @return A new instance of the key.
+   */
   public static FilterKey list(String name) {
     return new FilterKey(FilterKind.LIST, name);
   }
 
+  /**
+   * The name of the key.
+   *
+   * @return the name.
+   */
   public @NotNull String name() {
     return name;
   }
 
+  /**
+   * The kind of the key.
+   *
+   * @return the kind.
+   */
   public @NotNull FilterKind kind() {
     return kind;
   }

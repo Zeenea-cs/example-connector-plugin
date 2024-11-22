@@ -1,6 +1,7 @@
 package zeenea.connector.example.filter;
 
-public class Glob {
+/** Tool to convert a glob pattern to a regex. */
+class Glob {
   public static String toRegex(String glob) {
     var n = glob.length();
     var sb = new StringBuilder(n + n / 2);

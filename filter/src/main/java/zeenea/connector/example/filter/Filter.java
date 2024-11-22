@@ -11,71 +11,186 @@ import zeenea.connector.example.filter.FilterValue.Text;
 import zeenea.connector.example.filter.FilterValue.Unset;
 import zeenea.connector.example.filter.FilterValue.ValueList;
 
+/** Base class for filters. */
 public abstract class Filter {
 
+  /**
+   * Provide the "always" filter that accept everything.
+   *
+   * @return the "always" filter.
+   */
   public static Filter always() {
     return Constant.ALWAYS;
   }
 
+  /**
+   * Provide the "never" filter that reject everything.
+   *
+   * @return the "never" filter.
+   */
   public static Filter never() {
     return Constant.NEVER;
   }
 
+  /**
+   * Provide a constant filter that always reply the same value.
+   *
+   * @param result The constant reply of the filter.
+   * @return A constant filter.
+   */
   public static Filter constant(boolean result) {
     return result ? Constant.ALWAYS : Constant.NEVER;
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key is null.
+   *
+   * @param key The field key.
+   * @return A new filter.
+   */
   public static Filter isNull(FilterKey key) {
     return new IsNull(key);
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key is equal to a given value.
+   *
+   * @param key The field key.
+   * @param value The value the field should have to pass the filter.
+   * @return A new filter.
+   */
   public static Filter isEqualTo(FilterKey key, String value) {
     return new IsEqualTo(key, FilterValue.text(value));
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key starts with a given value.
+   *
+   * @param key The field key.
+   * @param value The value the field should start with to pass the filter.
+   * @return A new filter.
+   */
   public static Filter startsWith(FilterKey key, String value) {
     return new Starts(key, value);
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key ends with a given value.
+   *
+   * @param key The field key.
+   * @param value The value the field should end with to pass the filter.
+   * @return A new filter.
+   */
   public static Filter endsWith(FilterKey key, String value) {
     return new Ends(key, value);
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key contains a given value.
+   *
+   * @param key The field key.
+   * @param value The value the field should contain to pass the filter.
+   * @return A new filter.
+   */
   public static Filter contains(FilterKey key, String value) {
     return new Contains(key, value);
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key is one of the given values.
+   *
+   * @param key The field key.
+   * @param values The list of accepted values.
+   * @return A new filter.
+   */
   public static Filter in(FilterKey key, Set<String> values) {
     return new In(key, values);
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key is one of the given values.
+   *
+   * @param key The field key.
+   * @param values The list of accepted values.
+   * @return A new filter.
+   */
   public static Filter in(FilterKey key, String... values) {
     return new In(key, Set.of(values));
   }
 
-  public static Filter all(FilterKey key, FilterKey itemKey, Filter filter) {
-    if (!filter.keys().contains(itemKey)) return filter;
-    return new AllMatch(key, itemKey, filter);
+  /**
+   * Create a new filter that test that all the values of the list with the given key are accepted
+   * by the item filter. A temporary {@code itemKey} is created for the evaluation of the item
+   * filter.
+   *
+   * <p>This filter apply on list filter values.
+   *
+   * @param key The list field key.
+   * @param itemKey The temporary
+   * @param itemFilter The item filter.
+   * @return A new filter.
+   */
+  public static Filter all(FilterKey key, FilterKey itemKey, Filter itemFilter) {
+    if (!itemFilter.keys().contains(itemKey)) return itemFilter;
+    return new AllMatch(key, itemKey, itemFilter);
   }
 
-  public static Filter any(FilterKey key, FilterKey itemKey, Filter filter) {
-    if (filter.equals(Constant.NEVER)) return Constant.NEVER;
-    return new AnyMatch(key, itemKey, filter);
+  /**
+   * Create a new filter that test that any values of the list with the given key is accepted by the
+   * item filter. A temporary {@code itemKey} is created for the evaluation of the item filter.
+   *
+   * <p>This filter apply on list filter values.
+   *
+   * @param key The list field key.
+   * @param itemKey The temporary
+   * @param itemFilter The item filter.
+   * @return A new filter.
+   */
+  public static Filter any(FilterKey key, FilterKey itemKey, Filter itemFilter) {
+    if (itemFilter.equals(Constant.NEVER)) return Constant.NEVER;
+    return new AnyMatch(key, itemKey, itemFilter);
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key matches a glob pattern.
+   *
+   * @param key The field key.
+   * @param glob The glob pattern.
+   * @return A new filter.
+   */
   public static Filter glob(FilterKey key, String glob) {
     return new MatchesGlob(key, glob);
   }
 
+  /**
+   * Create a new filter that tests if the value with the given key matches a relational expression.
+   *
+   * @param key The field key.
+   * @param pattern The relational expression pattern.
+   * @return A new filter.
+   */
   public static Filter regex(FilterKey key, Pattern pattern) {
     return new MatchesRegex(key, pattern);
   }
 
+  /**
+   * Create a new filter that is the opposite of the given filter.
+   *
+   * @param filter The filter to negate.
+   * @return A new filter.
+   */
   public static Filter not(Filter filter) {
     if (filter instanceof Not) return ((Not) filter).filter;
     return new Not(filter);
   }
 
+  /**
+   * Create a new filter that is true when both the given filters are true.
+   *
+   * @param filter1 Filter 1.
+   * @param filter2 Filter 2.
+   * @return A new filter.
+   */
   public static Filter and(Filter filter1, Filter filter2) {
     if (filter1.equals(Constant.ALWAYS)) return filter2;
     if (filter2.equals(Constant.ALWAYS)) return filter1;
@@ -83,6 +198,13 @@ public abstract class Filter {
     return new And(filter1, filter2);
   }
 
+  /**
+   * Create a new filter that is true when one of the given filters are true.
+   *
+   * @param filter1 Filter 1.
+   * @param filter2 Filter 2.
+   * @return A new filter.
+   */
   public static Filter or(Filter filter1, Filter filter2) {
     if (filter1.equals(Constant.NEVER)) return filter2;
     if (filter2.equals(Constant.NEVER)) return filter1;
@@ -90,12 +212,76 @@ public abstract class Filter {
     return new Or(filter1, filter2);
   }
 
+  /**
+   * The set of the keys used by they filter.
+   *
+   * @return The filter keys.
+   */
   public abstract Set<FilterKey> keys();
 
+  /**
+   * Test if an item matches the filter.
+   *
+   * @param item The item to test.
+   * @return {@code true} if the item matches the filter, {@code false} otherwise.
+   */
   public abstract boolean matches(FilterItem item);
 
+  /**
+   * Create a simplified filter in case part some of the item values are already known.
+   *
+   * <p>This is useful when the items have already been partially filtered. A more simple filter
+   * will provide better performances.
+   *
+   * <p>For instance, let's have an item with two keys: "schema" and "table" and suppose we have the
+   * given filter:
+   *
+   * <pre>
+   *     schema = 'production' and table = 'customer'
+   * </pre>
+   *
+   * <p>Then:
+   *
+   * <pre>
+   *     var filter = FilterParser.parse(" schema = 'production' and table = 'customer' ");
+   *
+   *     // If the schema of the context matches the schema subfilter we only need to test the table value.
+   *     var productionFilter = filter.withContext(FilterItem.of(FilterKeyValue.of(schemaKey, text("production"))));
+   *     assertEquals(FilterParser.parse("table = 'customer' "), productionFilter);
+   *
+   *     // If the schema of the context doesn't match the schema subfilter we can rejet every value.
+   *     var developmentFilter = filter.withContext(FilterItem.of(FilterKeyValue.of(schemaKey, text("development"))));
+   *     assertEquals(Filter.never(), developmentFilter);
+   * </pre>
+   *
+   * @param item Partial item giving the context.
+   * @return A simplified filter equivalent in the given context.
+   */
   public abstract @NotNull Filter withContext(FilterItem item);
 
+  /**
+   * Create a new filter that reject items that can already discarded base on some fields.
+   *
+   * <p>This is useful to reduce early the amount of work when only part of the information is
+   * present.
+   *
+   * <p>For instance, let's have an item with two keys: "schema" and "table".
+   *
+   * <pre>
+   *     // With "and" filter we can exclude items with a different schema.
+   *     var andFilter = FilterParser.parse(" schema = 'production' and table = 'customer' ");
+   *     var schemaFilter = filter.partial(schemaKey);
+   *     assertEquals(FilterParser.parse(" schema = 'production'"), schemaFilter);
+   *
+   *     // With "or" filter we can not exclude any items.
+   *     var orFilter = FilterParser.parse(" schema = 'production' or table = 'customer' ");
+   *     var schemaFilter = filter.partial(schemaKey);
+   *     assertEquals(FilterParser.always(), schemaFilter);
+   * </pre>
+   *
+   * @param keys Key already set.
+   * @return A new filter that partially reject items that can already be rejected.
+   */
   public @NotNull Filter partial(FilterKey... keys) {
     var partial = rewrite(Set.of(keys));
     return partial != null ? partial : always();

@@ -1,5 +1,6 @@
 package zeenea.connector.example.filter;
 
+/** Exception triggerd by an error while parsing a filter specification. */
 public class FilterParsingException extends RuntimeException {
 
   public FilterParsingException(String message) {

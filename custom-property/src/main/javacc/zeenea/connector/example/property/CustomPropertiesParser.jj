@@ -3,6 +3,7 @@ options {
   JDK_VERSION = "11";
   JAVA_TEMPLATE_TYPE = "modern";
   UNICODE_INPUT = true;
+  IGNORE_CASE = true;
 }
 
 PARSER_BEGIN(CustomPropertiesParser)
@@ -11,10 +12,10 @@ package zeenea.connector.example.property;
 import java.util.ArrayList;
 import java.util.List;
 import zeenea.connector.property.PropertyDefinition;
+import zeenea.connector.property.PropertyType;
 
 class CustomPropertiesParser {
-
-  private String fromValue(String text) {
+  private String unquote(String text) {
     var sb = new StringBuilder();
     for (int i = 1, n = text.length() - 1; i < n; ++i) {
       char c = text.charAt(i);
@@ -26,7 +27,6 @@ class CustomPropertiesParser {
     }
     return sb.toString();
   }
-
 }
 PARSER_END(CustomPropertiesParser)
 
@@ -58,9 +58,19 @@ TOKEN:
 |   <TAG: "tag">
 }
 
+/* Keywords. */
 TOKEN:
 {
-  <VALUE: "'" (~["'"] | "\\'" )*  "'">
+    <FROM: "from">
+}
+
+/* values */
+TOKEN:
+{
+    <QUOTED_NAME: "'" (~["'"] | "\\'" )*  "'">
+|   <RAW_NAME: <FIRST_LETTER> (<NEXT_LETTER>)*>
+|   <#FIRST_LETTER: [ "_", "a"-"z", "A"-"Z" ]>
+|   <#NEXT_LETTER: [ "-", "_", "a"-"z", "A"-"Z", "0"-"9" ]>
 }
 
 List<CustomProperty> propertyList():
@@ -75,18 +85,33 @@ List<CustomProperty> propertyList():
 
 CustomProperty property():
 {
-    Token code;
-    Token attribute;
-    CustomProperty property;
+    PropertyType propertyType;
+    String code;
+    String attribute = null;
 }
 {
     (
-        <STRING>         code = <VALUE> attribute = <VALUE> { property = CustomProperty.string(fromValue(code.image), fromValue(attribute.image)); }
-    |   <TAG>            code = <VALUE> attribute = <VALUE> { property = CustomProperty.tag(fromValue(code.image), fromValue(attribute.image)); }
-    |   (<LONG>)? <TEXT> code = <VALUE> attribute = <VALUE> { property = CustomProperty.longText(fromValue(code.image), fromValue(attribute.image)); }
-    |   <NUMBER>         code = <VALUE> attribute = <VALUE> { property = CustomProperty.number(fromValue(code.image), fromValue(attribute.image)); }
-    |   <URL>            code = <VALUE> attribute = <VALUE> { property = CustomProperty.url(fromValue(code.image), fromValue(attribute.image)); }
-    |   <INSTANT>        code = <VALUE> attribute = <VALUE> { property = CustomProperty.instant(fromValue(code.image), fromValue(attribute.image)); }
+        <STRING>         { propertyType = PropertyType.STRING; }
+    |   <TAG>            { propertyType = PropertyType.TAG; }
+    |   (<LONG>)? <TEXT> { propertyType = PropertyType.LONG_TEXT; }
+    |   <NUMBER>         { propertyType = PropertyType.NUMBER; }
+    |   <URL>            { propertyType = PropertyType.URL; }
+    |   <INSTANT>        { propertyType = PropertyType.INSTANT; }
     )
-    { return property; }
+    code = name()
+    ( <FROM> attribute = name() )?
+    { return CustomProperty.of(propertyType, code, attribute != null ? attribute : code); }
+}
+
+String name():
+{
+    Token nameToken;
+    String name;
+}
+{
+    (
+        nameToken = <QUOTED_NAME> { name = unquote(nameToken.image); }
+    |   nameToken = <RAW_NAME> { name = nameToken.image; }
+    )
+    { return name; }
 }

@@ -1,5 +1,6 @@
 package zeenea.connector.example.property;
 
+import java.util.Objects;
 import java.util.StringJoiner;
 import zeenea.connector.property.InstantPropertyDefinition;
 import zeenea.connector.property.LongTextPropertyDefinition;
@@ -17,6 +18,25 @@ public final class CustomProperty {
   public CustomProperty(PropertyDefinition definition, String attributeName) {
     this.definition = definition;
     this.attributeName = attributeName;
+  }
+
+  public static CustomProperty of(PropertyType type, String code, String attributeName) {
+    switch (type) {
+      case STRING:
+        return string(code, attributeName);
+      case TAG:
+        return tag(code, attributeName);
+      case LONG_TEXT:
+        return longText(code, attributeName);
+      case NUMBER:
+        return number(code, attributeName);
+      case INSTANT:
+        return instant(code, attributeName);
+      case URL:
+        return url(code, attributeName);
+      default:
+        throw new IllegalArgumentException("Unknown property type: " + type);
+    }
   }
 
   public static CustomProperty string(String code, String attributeName) {
@@ -57,6 +77,19 @@ public final class CustomProperty {
 
   public String getAttributeName() {
     return attributeName;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof CustomProperty)) return false;
+    CustomProperty property = (CustomProperty) o;
+    return Objects.equals(definition, property.definition)
+        && Objects.equals(attributeName, property.attributeName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(definition, attributeName);
   }
 
   @Override

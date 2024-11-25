@@ -1,70 +1,83 @@
 package zeenea.connector.example.json;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class JsonField {
-  private @NotNull String name;
-  private @Nullable String description;
-  private @Nullable String nativeType;
-  private @Nullable String dataType;
-  private @Nullable Boolean isNullable;
-  private @Nullable Boolean isMultivalued;
-  private @Nullable Boolean isPrimaryKey;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.databind.JsonNode;
 
-  public @NotNull String getName() {
+public class JsonField implements Customizable {
+  private String name;
+  private String description;
+  private String nativeType;
+  private String dataType;
+  private boolean isNullable = false;
+  private boolean isMultivalued = false;
+  private final Map<String, JsonNode> customProperty = new HashMap<>();
+
+  public String getName() {
     return name;
   }
 
-  public void setName(@NotNull String name) {
+  public void setName(String name) {
     this.name = name;
   }
 
-  public @Nullable String getDescription() {
+  public String getDescription() {
     return description;
   }
 
-  public void setDescription(@Nullable String description) {
+  public void setDescription(String description) {
     this.description = description;
   }
 
-  public @Nullable String getNativeType() {
+  public String getNativeType() {
     return nativeType;
   }
 
-  public void setNativeType(@Nullable String nativeType) {
+  public void setNativeType(String nativeType) {
     this.nativeType = nativeType;
   }
 
-  public @Nullable String getDataType() {
+  public String getDataType() {
     return dataType;
   }
 
-  public void setDataType(@Nullable String dataType) {
+  public void setDataType(String dataType) {
     this.dataType = dataType;
   }
 
-  public @Nullable Boolean getNullable() {
+  public boolean isNullable() {
     return isNullable;
   }
 
-  public void setNullable(@Nullable Boolean nullable) {
+  public void setNullable(boolean nullable) {
     isNullable = nullable;
   }
 
-  public @Nullable Boolean getMultivalued() {
+  public boolean isMultivalued() {
     return isMultivalued;
   }
 
-  public void setMultivalued(@Nullable Boolean multivalued) {
+  public void setMultivalued(boolean multivalued) {
     isMultivalued = multivalued;
   }
 
-  public @Nullable Boolean getPrimaryKey() {
-    return isPrimaryKey;
+  @JsonAnyGetter
+  public Map<String, JsonNode> getCustomPropertyMap() {
+    return customProperty;
   }
 
-  public void setPrimaryKey(@Nullable Boolean primaryKey) {
-    isPrimaryKey = primaryKey;
+  public JsonNode getCustomProperty(String name) {
+    return customProperty.get(name);
+  }
+
+  @JsonAnySetter
+  public void setCustomProperty(String name, JsonNode value) {
+    customProperty.put(name, value);
   }
 }

@@ -2,6 +2,7 @@ package zeenea.connector.example.dataset;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,13 +10,17 @@ import java.util.stream.Stream;
 import zeenea.connector.Item;
 import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemInventory;
+import zeenea.connector.example.Config;
 import zeenea.connector.example.ExampleMapper;
 import zeenea.connector.example.Ids;
 import zeenea.connector.example.ItemFilters;
 import zeenea.connector.example.Metadata;
 import zeenea.connector.example.file.FileFinder;
+import zeenea.connector.example.file.FileItem;
 import zeenea.connector.example.filter.Filter;
 import zeenea.connector.example.json.Json;
+import zeenea.connector.example.json.JsonDataset;
+import zeenea.connector.example.json.JsonVisualization;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
 import zeenea.connector.inventory.InventoryConnection;
@@ -24,8 +29,14 @@ import zeenea.connector.property.PropertyDefinition;
 public class ExampleDatasetConnection implements InventoryConnection {
   private static final SimpleLogger log = SimpleLogger.of(ExampleDatasetConnection.class);
 
-  private final ExampleDatasetConfig config;
+  /** Configuration. */
+  private final Config config;
+
+  /** FileFinder instance. */
   private final FileFinder fileFinder;
+
+  /** Cache for extractItem item lookup. */
+  private Map<ItemIdentifier, FileItem<JsonDataset>> datasetByItemId;
 
   /**
    * Create a new instance of {@code ExampleDatasetConnection}
@@ -33,7 +44,7 @@ public class ExampleDatasetConnection implements InventoryConnection {
    * @param config The connection configuration.
    * @param fileFinder The file finder.
    */
-  public ExampleDatasetConnection(ExampleDatasetConfig config, FileFinder fileFinder) {
+  public ExampleDatasetConnection(Config config, FileFinder fileFinder) {
     this.config = Objects.requireNonNull(config);
     this.fileFinder = Objects.requireNonNull(fileFinder);
   }
@@ -42,9 +53,8 @@ public class ExampleDatasetConnection implements InventoryConnection {
   public Set<PropertyDefinition> getProperties() {
     var properties = new HashSet<PropertyDefinition>();
     properties.add(Metadata.PATH_MD);
-    properties.addAll(config.datasetProperties().getDefinitions());
+    properties.addAll(config.customProperties().getDefinitions());
     properties.addAll(config.fieldProperties().getDefinitions());
-    properties.addAll(config.processProperties().getDefinitions());
     return properties;
   }
 
@@ -67,8 +77,8 @@ public class ExampleDatasetConnection implements InventoryConnection {
     List<ItemInventory> inventory =
         fileFinder.findZeeneaFiles(ctx).stream()
             .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-            .flatMap(f -> Json.readItems(ctx, f, DatasetRoot.class, DatasetRoot::getDatasets))
-            .filter(p -> filter.matches(ItemFilters.item(p, config.datasetProperties())))
+            .flatMap(f -> Json.readItems(ctx, f, JsonDataset.class))
+            .filter(p -> filter.matches(ItemFilters.item(p, config.customProperties())))
             .map(
                 d ->
                     ItemInventory.of(

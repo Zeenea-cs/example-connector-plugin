@@ -40,11 +40,11 @@ public class Strings {
   }
 
   @Contract(pure = true, value = "_, null -> fail; null, _ -> null; !null, !null -> !null")
-  public static String chopSuffix(String string, String suffix) {
-    Objects.requireNonNull(suffix);
-    if (string == null || suffix.isEmpty() || !string.endsWith(suffix)) {
+  public static String removePrefix(String string, String prefix) {
+    Objects.requireNonNull(prefix);
+    if (string == null || prefix.isEmpty() || !string.startsWith(prefix)) {
       return string;
     }
-    return string.substring(0, string.length() - suffix.length());
+    return string.substring(prefix.length());
   }
 }

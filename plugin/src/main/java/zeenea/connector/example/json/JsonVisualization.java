@@ -2,14 +2,14 @@ package zeenea.connector.example.json;
 
 import java.util.List;
 
-public final class JsonVisualization extends JsonItem {
-  private List<JsonDataset> datasets = List.of();
+public final class JsonVisualization extends JsonItem implements WithFields {
+  private List<JsonField> fields = List.of();
 
-  public List<JsonDataset> getDatasets() {
-    return datasets;
+  public List<JsonField> getFields() {
+    return fields;
   }
 
-  public void setDatasets(List<JsonDataset> datasets) {
-    this.datasets = datasets;
+  public void setFields(List<JsonField> fields) {
+    this.fields = fields;
   }
 }

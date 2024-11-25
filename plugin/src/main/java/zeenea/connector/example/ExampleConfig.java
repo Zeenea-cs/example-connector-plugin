@@ -1,4 +1,4 @@
-package zeenea.connector.example.dataset;
+package zeenea.connector.example;
 
 import static java.util.Objects.requireNonNull;
 
@@ -6,23 +6,21 @@ import zeenea.connector.example.filter.Filter;
 import zeenea.connector.example.property.CustomProperties;
 
 /**
- * Configuration of the {@code ExampleDatasetConnection}.
+ * Configuration.
  *
  * <p>Use an object when there are may configuration entries.
  */
-public final class ExampleDatasetConfig {
+public final class ExampleConfig {
   private final String connectionCode;
   private final Filter filter;
-  private final CustomProperties datasetProperties;
+  private final CustomProperties customProperties;
   private final CustomProperties fieldProperties;
-  private final CustomProperties processProperties;
 
-  private ExampleDatasetConfig(Builder builder) {
+  private ExampleConfig(Builder builder) {
     connectionCode = requireNonNull(builder.connectionCode);
     filter = requireNonNull(builder.filter);
-    datasetProperties = requireNonNull(builder.datasetProperties);
-    fieldProperties = requireNonNull(builder.fieldProperties);
-    processProperties = requireNonNull(builder.processProperties);
+    customProperties = requireNonNull(builder.customProperties);
+    fieldProperties = builder.fieldProperties;
   }
 
   static Builder builder() {
@@ -37,24 +35,19 @@ public final class ExampleDatasetConfig {
     return filter;
   }
 
-  public CustomProperties datasetProperties() {
-    return datasetProperties;
+  public CustomProperties customProperties() {
+    return customProperties;
   }
 
   public CustomProperties fieldProperties() {
     return fieldProperties;
   }
 
-  public CustomProperties processProperties() {
-    return processProperties;
-  }
-
   public static class Builder {
     private String connectionCode;
     private Filter filter;
-    private CustomProperties datasetProperties;
+    private CustomProperties customProperties;
     private CustomProperties fieldProperties;
-    private CustomProperties processProperties;
 
     public Builder connectionCode(String connectionCode) {
       this.connectionCode = connectionCode;
@@ -66,8 +59,8 @@ public final class ExampleDatasetConfig {
       return this;
     }
 
-    public Builder datasetProperties(CustomProperties datasetProperties) {
-      this.datasetProperties = datasetProperties;
+    public Builder customProperties(CustomProperties customProperties) {
+      this.customProperties = customProperties;
       return this;
     }
 
@@ -76,13 +69,8 @@ public final class ExampleDatasetConfig {
       return this;
     }
 
-    public Builder processProperties(CustomProperties processProperties) {
-      this.processProperties = processProperties;
-      return this;
-    }
-
-    public ExampleDatasetConfig build() {
-      return new ExampleDatasetConfig(this);
+    public ExampleConfig build() {
+      return new ExampleConfig(this);
     }
   }
 }

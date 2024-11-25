@@ -7,12 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class JsonItem {
+public abstract class JsonItem implements Customizable {
   private String id;
   private String name;
   private String description;
   private List<JsonContact> contacts = List.of();
-  private Map<String, JsonNode> customFields = new HashMap<>();
+  private List<JsonItemRef> sources = List.of();
+  private final Map<String, JsonNode> customProperty = new HashMap<>();
 
   public String getId() {
     return id;
@@ -46,17 +47,25 @@ public abstract class JsonItem {
     this.contacts = contacts;
   }
 
-  @JsonAnyGetter
-  public Map<String, JsonNode> customFields() {
-    return customFields;
+  public List<JsonItemRef> getSources() {
+    return sources;
   }
 
-  public JsonNode getCustomField(String name) {
-    return customFields.get(name);
+  public void setSources(List<JsonItemRef> sources) {
+    this.sources = sources;
+  }
+
+  @JsonAnyGetter
+  public Map<String, JsonNode> getCustomPropertyMap() {
+    return customProperty;
+  }
+
+  public JsonNode getCustomProperty(String name) {
+    return customProperty.get(name);
   }
 
   @JsonAnySetter
-  public void setCustomField(String name, JsonNode value) {
-    customFields.put(name, value);
+  public void setCustomProperty(String name, JsonNode value) {
+    customProperty.put(name, value);
   }
 }

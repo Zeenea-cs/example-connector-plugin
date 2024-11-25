@@ -3,7 +3,7 @@ package zeenea.connector.example.lineage;
 import org.pf4j.Extension;
 import zeenea.connector.ConnectionConfiguration;
 import zeenea.connector.Connector;
-import zeenea.connector.example.Configuration;
+import zeenea.connector.example.Config;
 import zeenea.connector.example.ItemFilters;
 import zeenea.connector.example.file.FileFinder;
 import zeenea.connector.example.property.CustomProperties;
@@ -26,14 +26,22 @@ public class ExampleLineageConnector implements Connector {
     // Parse custom properties.
     var customProperties =
             CustomProperties.parse(
-                    configuration.getStringOptional(Configuration.CUSTOM_PROPERTIES_CONF).orElse(""));
+                    configuration.getStringOptional(Config.CUSTOM_PROPERTIES_CONF).orElse(""));
 
     // Parser Filter.
     var filter = ItemFilters.parseFilter(configuration, customProperties);
 
-    // Create file finder. The default extension is: ".lineage.json".
+    // Group the configuration in a single config object.
+    var config =
+            Config.builder()
+                    .connectionCode(connectionCode)
+                    .filter(filter)
+                    .customProperties(customProperties)
+                    .build();
+
+    // Create file finder. The default extension is: ".lineage.ndjson".
     var fileFinder = FileFinder.create(configuration, "lineage");
 
-    return new ExampleLineageConnection(connectionCode, customProperties, filter, fileFinder);
+    return new ExampleLineageConnection(config, fileFinder);
   }
 }

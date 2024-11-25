@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import zeenea.connector.ConnectionConfiguration;
-import zeenea.connector.example.Configuration;
+import zeenea.connector.example.Config;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.Strings;
 import zeenea.connector.example.log.TracingContext;
@@ -54,16 +54,16 @@ public class FileFinder {
 
   public static FileFinder create(ConnectionConfiguration configuration, String defaultExtension) {
     // Get file path for the configuration.
-    var path = configuration.getPath(Configuration.PATH_CONF);
+    var path = configuration.getPath(Config.PATH_CONF);
 
     // File path is relative to scanner home folder.
     var fullPath = path.isAbsolute() ? path : configuration.getScannerHomeFolder().resolve(path);
 
     var extension =
         configuration
-            .getStringOptional(Configuration.EXTENSION_CONF)
+            .getStringOptional(Config.EXTENSION_CONF)
             .map(e -> Strings.ensurePrefix(".", e))
-            .orElse(Strings.ensurePrefix(".", defaultExtension + ".json"));
+            .orElse(Strings.ensurePrefix(".", defaultExtension + ".ndjson"));
 
     return new FileFinder(fullPath, extension);
   }

@@ -8,6 +8,8 @@ import zeenea.connector.property.PropertyDefinition;
 
 /** A list of custom properties. */
 public class CustomProperties {
+  private static final CustomProperties EMPTY = new CustomProperties(List.of());
+
   private final List<CustomProperty> properties;
 
   /**
@@ -17,6 +19,15 @@ public class CustomProperties {
    */
   public CustomProperties(List<CustomProperty> properties) {
     this.properties = List.copyOf(properties);
+  }
+
+  /**
+   * Empty Custom properties.
+   *
+   * @return An empty instance.
+   */
+  public static CustomProperties empty() {
+    return EMPTY;
   }
 
   /**
@@ -47,7 +58,7 @@ public class CustomProperties {
    * @return A new {@code CustomProperties}.
    */
   public static CustomProperties parse(String definitions) {
-    if (definitions == null || definitions.isEmpty()) return new CustomProperties(List.of());
+    if (definitions == null || definitions.isEmpty()) return EMPTY;
     try {
       var parser = new CustomPropertiesParser(definitions);
       return new CustomProperties(parser.propertyList());
@@ -58,6 +69,7 @@ public class CustomProperties {
 
   /**
    * Parse the definition of custom properties from the configuration.
+   *
    * @param configuration Connection configuration.
    * @param configurationField Property to read configuration from.
    * @return The custom property repository.

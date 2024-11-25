@@ -5,12 +5,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 import zeenea.connector.Item;
+import zeenea.connector.example.Config;
 import zeenea.connector.example.ExampleMapper;
 import zeenea.connector.example.ItemFilters;
 import zeenea.connector.example.Metadata;
 import zeenea.connector.example.file.FileFinder;
 import zeenea.connector.example.filter.Filter;
 import zeenea.connector.example.json.Json;
+import zeenea.connector.example.json.JsonProcess;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
 import zeenea.connector.example.property.CustomProperties;
@@ -26,14 +28,8 @@ public class ExampleLineageConnection implements SynchronizeConnection {
   /** Logger instance. */
   private static final SimpleLogger log = SimpleLogger.of(ExampleLineageConnection.class);
 
-  /** Connection code. */
-  private final String connectionCode;
-
-  /** Custom property repository. */
-  private final CustomProperties customProperties;
-
-  /** Item filter. */
-  private final Filter filter;
+  /** Configuration. */
+  private final Config config;
 
   /** FileFinder instance. */
   private final FileFinder fileFinder;
@@ -41,20 +37,12 @@ public class ExampleLineageConnection implements SynchronizeConnection {
   /**
    * Construct a new instance of {@code ExampleLineageConnection}.
    *
-   * @param connectionCode Connection code.
-   * @param customProperties Custom property repository.
-   * @param filter Item filter.
+   * @param config The connection configuration.
    * @param fileFinder File finder instance.
    */
-  public ExampleLineageConnection(
-      String connectionCode,
-      CustomProperties customProperties,
-      Filter filter,
-      FileFinder fileFinder) {
-    this.connectionCode = Objects.requireNonNull(connectionCode);
+  public ExampleLineageConnection(Config config, FileFinder fileFinder) {
+    this.config = Objects.requireNonNull(config);
     this.fileFinder = Objects.requireNonNull(fileFinder);
-    this.customProperties = Objects.requireNonNull(customProperties);
-    this.filter = Objects.requireNonNull(filter);
   }
 
   /**
@@ -66,7 +54,7 @@ public class ExampleLineageConnection implements SynchronizeConnection {
   public Set<PropertyDefinition> getProperties() {
     var properties = new HashSet<PropertyDefinition>();
     properties.add(Metadata.PATH_MD);
-    properties.addAll(customProperties.getDefinitions());
+    properties.addAll(config.customProperties().getDefinitions());
     return properties;
   }
 
@@ -78,17 +66,17 @@ public class ExampleLineageConnection implements SynchronizeConnection {
   @Override
   public Stream<Item> synchronize() {
     // Create a context used by the logger.
-    var ctx = TracingContext.synchronize(connectionCode);
+    var ctx = TracingContext.synchronize(config.connectionCode());
     log.entry("example_lineage_synchronize_start").context(ctx).info();
 
     // Create a file partial filter to avoid reading files that could be filtered.
-    var fileFilter = ItemFilters.fileFilter(filter);
+    var fileFilter = ItemFilters.fileFilter(config.filter());
 
     return fileFinder.findZeeneaFiles(ctx).stream()
         .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-        .flatMap(f -> Json.readItems(ctx, f, LineageRoot.class, LineageRoot::getLineage))
-        .filter(p -> filter.matches(ItemFilters.item(p, customProperties)))
-        .map(p -> ExampleMapper.dataProcess(p, customProperties));
+        .flatMap(f -> Json.readItems(ctx, f, JsonProcess.class))
+        .filter(p -> config.filter().matches(ItemFilters.item(p, config.customProperties())))
+        .map(p -> ExampleMapper.dataProcess(p, config.customProperties()));
   }
 
   @Override

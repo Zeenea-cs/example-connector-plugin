@@ -24,7 +24,7 @@ public class ItemFilters {
 
   public static Filter parseFilter(
       ConnectionConfiguration configuration, CustomProperties customProperties) {
-    Optional<String> filterString = configuration.getStringOptional(Configuration.FILTER_CONF);
+    Optional<String> filterString = configuration.getStringOptional(Config.FILTER_CONF);
     if (filterString.isEmpty() || filterString.get().isBlank()) return Filter.always();
     var filterKeys = new HashSet<FilterKey>();
     filterKeys.add(ID_KEY);
@@ -95,7 +95,7 @@ public class ItemFilters {
       JsonItem item, CustomProperties customProperties, ArrayList<FilterKeyValue> kvList) {
     for (CustomProperty property : customProperties.getProperties()) {
       String propertyCode = property.getCode();
-      var value = item.getCustomField(property.getAttributeName());
+      var value = item.getCustomProperty(property.getAttributeName());
       if (value != null && !value.isNull() && !value.isMissingNode()) {
         switch (property.getType()) {
           case STRING:

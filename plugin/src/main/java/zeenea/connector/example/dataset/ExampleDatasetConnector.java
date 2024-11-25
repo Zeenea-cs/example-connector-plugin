@@ -4,6 +4,7 @@ import org.pf4j.Extension;
 import zeenea.connector.ConnectionConfiguration;
 import zeenea.connector.Connector;
 import zeenea.connector.example.Config;
+import zeenea.connector.example.ExampleMapper;
 import zeenea.connector.example.file.FileRepository;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
@@ -27,9 +28,11 @@ public class ExampleDatasetConnector implements Connector {
     // The default extension is: ".dataset.ndjson".
     var config = Config.create(ctx, configuration, "dataset");
 
-    // Create file finder.
-    var fileFinder = new FileRepository(config);
+    var mapper = new ExampleMapper(config.connectionCode());
 
-    return new ExampleDatasetConnection(config, fileFinder);
+    // Create file finder.
+    var fileRepository = new FileRepository(config);
+
+    return new ExampleDatasetConnection(config, mapper, fileRepository);
   }
 }

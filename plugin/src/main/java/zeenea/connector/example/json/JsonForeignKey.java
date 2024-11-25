@@ -1,20 +1,42 @@
 package zeenea.connector.example.json;
 
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-public interface JsonForeignKey {
+public final class JsonForeignKey {
+  private String name;
+  private String targetDataset;
+  private List<String> targetFields;
+  private List<String> sourceFields;
 
-  @NotNull
-  String dataset();
+  public String getName() {
+    return name;
+  }
 
-  @NotNull
-  List<String> sourceFields();
+  public void setName(String name) {
+    this.name = name;
+  }
 
-  @NotNull
-  List<String> targetFields();
+  public String getTargetDataset() {
+    return targetDataset;
+  }
 
-  @Nullable
-  String name();
+  public void setTargetDataset(String targetDataset) {
+    this.targetDataset = targetDataset;
+  }
+
+  public List<String> getTargetFields() {
+    return targetFields;
+  }
+
+  public void setTargetFields(List<String> targetFields) {
+    this.targetFields = targetFields;
+  }
+
+  public List<String> getSourceFields() {
+    return sourceFields;
+  }
+
+  public void setSourceFields(List<String> sourceFields) {
+    this.sourceFields = sourceFields;
+  }
 }

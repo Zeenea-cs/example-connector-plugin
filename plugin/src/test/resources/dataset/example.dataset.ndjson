@@ -1,0 +1,115 @@
+{
+  "id": "/schema=music/table=albums",
+  "name": "albums",
+  "description": "Albums that group music plays",
+  "contacts": [
+    {
+      "role": "owner",
+      "email": "jean-michel.jarre@example.com",
+      "name": "Jean Michel Jarre",
+      "phone": "+1-212-555-7532"
+    }
+  ],
+  "fields": [
+    {
+      "name": "album_id",
+      "description": "Album identifier",
+      "nativeType": "numeric",
+      "dataType": "BigDecimal",
+      "nullable": false,
+      "multivalued": false
+    },
+    {
+      "name": "title",
+      "description": "Album Title",
+      "nativeType": "varchar(160)",
+      "dataType": "String",
+      "nullable": false,
+      "multivalued": false
+    },
+    {
+      "name": "artist_id",
+      "description": "Link to the Artist that performed the album",
+      "nativeType": "numeric",
+      "dataType": "BigDecimal",
+      "nullable": false,
+      "multivalued": false
+    }
+  ],
+  "type": "table",
+  "schema": "music",
+  "rows": 4321,
+  "primaryKey": [
+    "album_id"
+  ],
+  "foreignKeys": [
+    {
+      "name": "fk_albums_artists",
+      "targetDataset": "/schema=music/table=artists",
+      "targetFields": [
+        "artist_id"
+      ],
+      "sourceFields": [
+        "artist_id"
+      ]
+    }
+  ]
+}
+{
+  "id": "/schema=music/table=artists",
+  "name": "artists",
+  "fields": [
+    {
+      "name": "artist_id",
+      "nativeType": "numeric",
+      "dataType": "BigDecimal",
+      "nullable": false,
+      "multivalued": false
+    },
+    {
+      "name": "name",
+      "nativeType": "varchar(120)",
+      "dataType": "String",
+      "nullable": true,
+      "multivalued": false
+    }
+  ],
+  "type": "table",
+  "schema": "music",
+  "rows": 1234,
+  "primaryKey": [
+    "artist_id"
+  ]
+}
+{
+  "id": "/schema=music/table=artist_album_count",
+  "name": "artist_album_count",
+  "fields": [
+    {
+      "name": "artist_name",
+      "nativeType": "varchar(120)",
+      "dataType": "String",
+      "nullable": true,
+      "multivalued": false
+    },
+    {
+      "name": "albums_count",
+      "nativeType": "int8",
+      "dataType": "Long",
+      "nullable": true,
+      "multivalued": false
+    }
+  ],
+  "type": "view",
+  "schema": "music",
+  "sources": [
+    {
+      "id": "/schema=music/table=albums",
+      "connectionCode": "current_connection"
+    },
+    {
+      "id": "/schema=music/table=artists",
+      "connectionCode": "current_connection"
+    }
+  ]
+}

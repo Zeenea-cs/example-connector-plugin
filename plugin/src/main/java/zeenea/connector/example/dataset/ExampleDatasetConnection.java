@@ -30,6 +30,9 @@ public class ExampleDatasetConnection implements InventoryConnection {
   /** Configuration. */
   private final Config config;
 
+  /** Mapper. */
+  private final ExampleMapper mapper;
+
   /** FileFinder instance. */
   private final FileRepository fileRepository;
 
@@ -42,8 +45,10 @@ public class ExampleDatasetConnection implements InventoryConnection {
    * @param config The connection configuration.
    * @param fileRepository The file finder.
    */
-  public ExampleDatasetConnection(Config config, FileRepository fileRepository) {
+  public ExampleDatasetConnection(
+      Config config, ExampleMapper mapper, FileRepository fileRepository) {
     this.config = Objects.requireNonNull(config);
+    this.mapper = Objects.requireNonNull(mapper);
     this.fileRepository = Objects.requireNonNull(fileRepository);
   }
 
@@ -74,8 +79,8 @@ public class ExampleDatasetConnection implements InventoryConnection {
             .map(
                 d ->
                     ItemInventory.of(
-                        ExampleMapper.parseItemId(d.getItem().getId()),
-                        ExampleMapper.parseItemLabels(d.getItem().getId())))
+                        mapper.parseItemId(d.getItem().getId()),
+                        mapper.parseItemLabels(d.getItem().getId())))
             .peek(
                 i ->
                     log.entry("example_dataset_inventory_inventory_item_found")
@@ -136,10 +141,13 @@ public class ExampleDatasetConnection implements InventoryConnection {
             .id(itemId)
             .name(item.getName())
             .description(item.getDescription())
-            .properties(ExampleMapper.properties(fileItem, config.customProperties()))
-            .contacts(ExampleMapper.contacts(item))
-            .sourceDatasets(ExampleMapper.sources(item))
-            .fields(ExampleMapper.fields(item, config.fieldProperties()))
+            .properties(mapper.properties(ctx, fileItem, config.customProperties()))
+            .contacts(mapper.contacts(item))
+            .sourceDatasets(mapper.itemReferences(item.getSources()))
+            .fields(mapper.fields(ctx, item.getFields(), config.fieldProperties()))
+            .primaryKeys(item.getPrimaryKey())
+            .foreignKeys(mapper.foreignKeys(item.getForeignKeys()))
+            .partitions()
             .build();
 
     return Stream.of(dataset);
@@ -172,7 +180,7 @@ public class ExampleDatasetConnection implements InventoryConnection {
               .loadFileItems(ctx, JsonDataset.class)
               .collect(
                   Collectors.toMap(
-                      v -> ExampleMapper.parseItemId(v.getItem().getId()), Function.identity()));
+                      v -> mapper.parseItemId(v.getItem().getId()), Function.identity()));
     }
   }
 

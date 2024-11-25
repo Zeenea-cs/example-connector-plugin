@@ -3,7 +3,7 @@ package zeenea.connector.example.json;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
-public class JsonDataset extends JsonItem implements WithFields {
+public class JsonDataset extends JsonItem {
   private @NotNull List<JsonField> fields;
   private List<String> primaryKey = List.of();
   private List<JsonForeignKey> foreignKeys = List.of();

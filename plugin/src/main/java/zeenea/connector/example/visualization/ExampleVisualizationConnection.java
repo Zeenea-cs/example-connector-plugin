@@ -30,6 +30,9 @@ public class ExampleVisualizationConnection implements InventoryConnection {
   /** Configuration. */
   private final Config config;
 
+  /** Mapper. */
+  private final ExampleMapper mapper;
+
   /** FileFinder instance. */
   private final FileRepository fileRepository;
 
@@ -42,8 +45,10 @@ public class ExampleVisualizationConnection implements InventoryConnection {
    * @param config The connection configuration.
    * @param fileRepository File finder instance.
    */
-  public ExampleVisualizationConnection(Config config, FileRepository fileRepository) {
+  public ExampleVisualizationConnection(
+      Config config, ExampleMapper mapper, FileRepository fileRepository) {
     this.config = Objects.requireNonNull(config);
+    this.mapper = Objects.requireNonNull(mapper);
     this.fileRepository = Objects.requireNonNull(fileRepository);
   }
 
@@ -70,8 +75,8 @@ public class ExampleVisualizationConnection implements InventoryConnection {
             .map(
                 d ->
                     ItemInventory.of(
-                        ExampleMapper.parseItemId(d.getItem().getId()),
-                        ExampleMapper.parseItemLabels(d.getItem().getId())))
+                        mapper.parseItemId(d.getItem().getId()),
+                        mapper.parseItemLabels(d.getItem().getId())))
             .peek(
                 i ->
                     log.entry("example_visualization_inventory_inventory_item_found")
@@ -132,10 +137,10 @@ public class ExampleVisualizationConnection implements InventoryConnection {
             .id(itemId)
             .name(item.getName())
             .description(item.getDescription())
-            .properties(ExampleMapper.properties(fileItem, config.customProperties()))
-            .contacts(ExampleMapper.contacts(item))
-            .sourceDatasets(ExampleMapper.sources(item))
-            .fields(ExampleMapper.fields(item, config.fieldProperties()))
+            .properties(mapper.properties(ctx, fileItem, config.customProperties()))
+            .contacts(mapper.contacts(item))
+            .sourceDatasets(mapper.itemReferences(item.getSources()))
+            .fields(mapper.fields(ctx, item.getFields(), config.fieldProperties()))
             .build();
 
     return Stream.of(visualization);
@@ -166,7 +171,7 @@ public class ExampleVisualizationConnection implements InventoryConnection {
               .loadFileItems(ctx, JsonVisualization.class)
               .collect(
                   Collectors.toMap(
-                      v -> ExampleMapper.parseItemId(v.getItem().getId()), Function.identity()));
+                      v -> mapper.parseItemId(v.getItem().getId()), Function.identity()));
     }
   }
 

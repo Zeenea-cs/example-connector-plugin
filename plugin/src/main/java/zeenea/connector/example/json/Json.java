@@ -7,10 +7,8 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.ArrayList;
+import java.util.List;
 import zeenea.connector.example.file.FileItem;
 import zeenea.connector.example.file.FileRef;
 import zeenea.connector.example.log.SimpleLogger;
@@ -41,7 +39,7 @@ public class Json {
    * @param <T> The element type.
    * @return The stream of the file items.
    */
-  public static <T> Stream<FileItem<T>> readItems(
+  public static <T> List<FileItem<T>> readItems(
       TracingContext ctx, FileRef fileRef, Class<T> klass) {
     // Extract the connector case by convention on the root class name.
     var env = Strings.removePrefix(klass.getSimpleName(), "Json").toLowerCase();
@@ -52,17 +50,20 @@ public class Json {
         .info();
 
     try (var input = MAPPER.createParser(fileRef.getPath().toFile())) {
+      var list = new ArrayList<FileItem<T>>();
       MappingIterator<T> iterator = MAPPER.readValues(input, klass);
-      Spliterator<T> spliterator =
-          Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED | Spliterator.NONNULL);
-      return StreamSupport.stream(spliterator, false).map(p -> new FileItem<>(p, fileRef));
+      while (iterator.hasNext()) {
+        var item = iterator.next();
+        list.add(new FileItem<>(item, fileRef));
+      }
+      return list;
 
     } catch (IOException | RuntimeException e) {
       log.entry("example_" + env + "_read_file_failure")
           .context(ctx)
           .with("path", fileRef.getPath())
           .error(e);
-      return Stream.empty();
+      return List.of();
     }
   }
 }

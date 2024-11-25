@@ -12,6 +12,7 @@ import zeenea.connector.example.file.FileRepository;
 import zeenea.connector.example.json.JsonProcess;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
+import zeenea.connector.process.DataProcess;
 import zeenea.connector.property.PropertyDefinition;
 import zeenea.connector.synchronize.SynchronizeConnection;
 
@@ -27,6 +28,9 @@ public class ExampleLineageConnection implements SynchronizeConnection {
   /** Configuration. */
   private final Config config;
 
+  /** Mapper. */
+  private final ExampleMapper mapper;
+
   /** FileFinder instance. */
   private final FileRepository fileRepository;
 
@@ -36,8 +40,10 @@ public class ExampleLineageConnection implements SynchronizeConnection {
    * @param config The connection configuration.
    * @param fileRepository File finder instance.
    */
-  public ExampleLineageConnection(Config config, FileRepository fileRepository) {
+  public ExampleLineageConnection(
+      Config config, ExampleMapper mapper, FileRepository fileRepository) {
     this.config = Objects.requireNonNull(config);
+    this.mapper = Objects.requireNonNull(mapper);
     this.fileRepository = Objects.requireNonNull(fileRepository);
   }
 
@@ -67,8 +73,19 @@ public class ExampleLineageConnection implements SynchronizeConnection {
 
     return fileRepository
         .loadFileItems(ctx, JsonProcess.class)
-        // TODO move the process mapping here.
-        .map(p -> ExampleMapper.dataProcess(p, config.customProperties()));
+        .map(
+            fileItem -> {
+              var process = fileItem.getItem();
+              return DataProcess.builder()
+                  .id(mapper.parseItemId(process.getId()))
+                  .name(process.getName())
+                  .description(process.getDescription())
+                  .properties(mapper.properties(ctx, fileItem, config.customProperties()))
+                  .contacts(mapper.contacts(process))
+                  .sources(mapper.itemReferences(process.getSources()))
+                  .targets(mapper.itemReferences(process.getTargets()))
+                  .build();
+            });
   }
 
   @Override

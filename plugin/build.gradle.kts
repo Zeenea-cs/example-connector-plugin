@@ -102,6 +102,7 @@ distributions {
             }
             from(configurations.runtimeClasspath) {
                 into("lib")
+                // We explicitly exclude these libraries which could have been added by recursive dependencies.
                 exclude("slf4j-api*.jar")
                 exclude("commons-logging*.jar")
             }

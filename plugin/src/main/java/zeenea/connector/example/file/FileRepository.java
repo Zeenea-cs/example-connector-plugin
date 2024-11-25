@@ -30,7 +30,7 @@ public class FileRepository {
 
     return findZeeneaFiles(ctx).stream()
         .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-        .flatMap(f -> Json.readItems(ctx, f, klass))
+        .flatMap(f -> Json.readItems(ctx, f, klass).stream())
         .filter(v -> config.filter().matches(ItemFilters.item(v, config.customProperties())));
   }
 

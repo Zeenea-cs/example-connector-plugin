@@ -1,5 +1,7 @@
 package zeenea.connector.example;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -21,18 +23,19 @@ import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemReference;
 import zeenea.connector.contact.Contact;
 import zeenea.connector.dataset.DataType;
+import zeenea.connector.dataset.ForeignKey;
 import zeenea.connector.example.file.FileItem;
 import zeenea.connector.example.json.Customizable;
 import zeenea.connector.example.json.JsonContact;
 import zeenea.connector.example.json.JsonField;
+import zeenea.connector.example.json.JsonForeignKey;
 import zeenea.connector.example.json.JsonItem;
 import zeenea.connector.example.json.JsonItemRef;
-import zeenea.connector.example.json.JsonProcess;
-import zeenea.connector.example.json.WithFields;
+import zeenea.connector.example.log.SimpleLogger;
+import zeenea.connector.example.log.TracingContext;
 import zeenea.connector.example.property.CustomProperties;
 import zeenea.connector.example.property.CustomProperty;
 import zeenea.connector.field.Field;
-import zeenea.connector.process.DataProcess;
 import zeenea.connector.property.InstantPropertyDefinition;
 import zeenea.connector.property.NumberPropertyDefinition;
 import zeenea.connector.property.PropertiesBuilder;
@@ -52,25 +55,33 @@ public class ExampleMapper {
   private static final String DEFAULT_KEY = "id";
   private static final String FIELD_KEY = "field";
 
-  public static ItemIdentifier parseItemId(String id) {
+  private static final SimpleLogger log = SimpleLogger.of(ExampleMapper.class);
+
+  private final String currentConnectionCode;
+
+  public ExampleMapper(String currentConnectionCode) {
+    this.currentConnectionCode = currentConnectionCode;
+  }
+
+  public ItemIdentifier parseItemId(String id) {
     return ItemIdentifier.of(
         ID_SEP
             .splitAsStream(id)
             .filter(Predicate.not(String::isEmpty))
-            .map(ExampleMapper::parseIdProperty)
+            .map(this::parseIdProperty)
             .collect(Collectors.toList()));
   }
 
-  public static List<String> parseItemLabels(String id) {
+  public List<String> parseItemLabels(String id) {
     return ID_SEP
         .splitAsStream(id)
         .filter(Predicate.not(String::isEmpty))
-        .map(ExampleMapper::parseIdProperty)
-        .map(p -> p.getKey() + "=" + p.getValue())
+        .map(this::parseIdProperty)
+        .map(IdentificationProperty::getValue)
         .collect(Collectors.toList());
   }
 
-  public static IdentificationProperty parseIdProperty(String property) {
+  public IdentificationProperty parseIdProperty(String property) {
     var index = property.indexOf('=');
     if (index > 0) {
       return IdentificationProperty.of(property.substring(0, index), property.substring(index + 1));
@@ -79,38 +90,25 @@ public class ExampleMapper {
     }
   }
 
-  public static ItemIdentifier fieldId(String name) {
+  public ItemIdentifier fieldId(String name) {
     return ItemIdentifier.of(IdentificationProperty.of(FIELD_KEY, name));
   }
 
-  public static DataProcess dataProcess(
-      FileItem<JsonProcess> fileItem, CustomProperties customProperties) {
-    var process = fileItem.getItem();
-    return DataProcess.builder()
-        .id(parseItemId(process.getId()))
-        .name(process.getName())
-        .description(process.getDescription())
-        .properties(properties(fileItem, customProperties))
-        .contacts(contacts(process))
-        .sources(sources(process))
-        .targets(list(process.getTargets(), ExampleMapper::itemReference))
-        .build();
+  public List<Contact> contacts(JsonItem item) {
+    return list(item.getContacts(), this::contact);
   }
 
-  public static List<Contact> contacts(JsonItem item) {
-    return list(item.getContacts(), ExampleMapper::contact);
+  public List<ItemReference> itemReferences(List<JsonItemRef> refList) {
+    return list(refList, this::itemReference);
   }
 
-  public static List<ItemReference> sources(JsonItem item) {
-    return list(item.getSources(), ExampleMapper::itemReference);
-  }
-
-  public static List<Field> fields(WithFields item, CustomProperties customProperties) {
+  public List<Field> fields(
+      TracingContext ctx, List<JsonField> fields, CustomProperties customProperties) {
     var list = new ArrayList<Field>();
     int fieldIdx = 0;
-    for (JsonField field : item.getFields()) {
+    for (JsonField field : fields) {
       var properties =
-          customProperties(PropertiesBuilder.create(), field, customProperties).build();
+          customProperties(ctx, PropertiesBuilder.create(), field, customProperties).build();
 
       /*
        * Get native type and data type.
@@ -145,16 +143,21 @@ public class ExampleMapper {
     return list;
   }
 
-  public static Map<String, PropertyValue> properties(
-      FileItem<? extends JsonItem> fileItem, CustomProperties customProperties) {
+  public Map<String, PropertyValue> properties(
+      TracingContext ctx,
+      FileItem<? extends JsonItem> fileItem,
+      CustomProperties customProperties) {
     var item = fileItem.getItem();
     PropertiesBuilder properties =
         PropertiesBuilder.create().put(Metadata.PATH_MD, fileItem.getFileRef().getRelativePath());
-    return customProperties(properties, item, customProperties).build();
+    return customProperties(ctx, properties, item, customProperties).build();
   }
 
-  private static PropertiesBuilder customProperties(
-      PropertiesBuilder builder, Customizable item, CustomProperties customProperties) {
+  private PropertiesBuilder customProperties(
+      TracingContext ctx,
+      PropertiesBuilder builder,
+      Customizable item,
+      CustomProperties customProperties) {
     for (CustomProperty property : customProperties.getProperties()) {
       var value = item.getCustomProperty(property.getAttributeName());
       if (value != null && !value.isNull() && !value.isMissingNode()) {
@@ -187,7 +190,12 @@ public class ExampleMapper {
                     (NumberPropertyDefinition) property.getDefinition(),
                     new BigDecimal(value.textValue()));
               } catch (NumberFormatException e) {
-                //  TODO log at warn level
+                log.entry("example_mapper_invalid_number")
+                    .with("property_code", property.getCode())
+                    .with("json_attribute_name", property.getAttributeName())
+                    .with("value", value.textValue())
+                    .quiet()
+                    .warn(e);
               }
             }
             break;
@@ -199,7 +207,12 @@ public class ExampleMapper {
                     (InstantPropertyDefinition) property.getDefinition(),
                     Instant.parse(value.textValue()));
               } catch (DateTimeParseException e) {
-                // TODO log at warn level
+                log.entry("example_mapper_invalid_instant")
+                    .with("property_code", property.getCode())
+                    .with("json_attribute_name", property.getAttributeName())
+                    .with("value", value.textValue())
+                    .quiet()
+                    .warn(e);
               }
             }
             break;
@@ -212,7 +225,12 @@ public class ExampleMapper {
               try {
                 uri = new URI(value.textValue());
               } catch (URISyntaxException e) {
-                // TODO log at warn level
+                log.entry("example_mapper_invalid_uri")
+                    .with("property_code", property.getCode())
+                    .with("json_attribute_name", property.getAttributeName())
+                    .with("value", value.textValue())
+                    .quiet()
+                    .warn(e);
               }
             } else if (value.isObject()) {
               var uriPath = value.path("uri");
@@ -220,7 +238,12 @@ public class ExampleMapper {
                 try {
                   uri = new URI(value.textValue());
                 } catch (URISyntaxException e) {
-                  // TODO log at warn level
+                  log.entry("example_mapper_invalid_uri")
+                      .with("property_code", property.getCode())
+                      .with("json_attribute_name", property.getAttributeName())
+                      .with("value", value.textValue())
+                      .quiet()
+                      .warn(e);
                 }
               }
               var labelPath = value.path("label");
@@ -238,14 +261,49 @@ public class ExampleMapper {
     return builder;
   }
 
-  private static <E, R> List<R> list(List<E> list, Function<? super E, ? extends R> elementMapper) {
+  // Wait for a fix of zeenea.connector.dataset.ForeignKey.Builder#build visibility.
+  private static final Method BUILD_FK;
+
+  static {
+    try {
+      BUILD_FK = ForeignKey.Builder.class.getDeclaredMethod("build");
+      BUILD_FK.setAccessible(true);
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public List<ForeignKey> foreignKeys(List<JsonForeignKey> foreignKeys) {
+    // Wait for a fix of zeenea.connector.dataset.ForeignKey.Builder#build visibility.
+    return list(
+        foreignKeys,
+        fk -> {
+          try {
+            return (ForeignKey)
+                BUILD_FK.invoke(
+                    ForeignKey.builder()
+                        .name(fk.getName())
+                        .targetDataset(fk.getTargetDataset())
+                        .targetFields(fk.getTargetFields())
+                        .sourceFields(fk.getSourceFields()));
+          } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  private <E, R> List<R> list(List<E> list, Function<? super E, ? extends R> elementMapper) {
     return list.stream().map(elementMapper).collect(Collectors.toList());
   }
 
-  private static ItemReference itemReference(JsonItemRef itemRef) {
+  private ItemReference itemReference(JsonItemRef itemRef) {
     ConnectionReference connectionRef;
     if (itemRef.getConnectionCode() != null) {
-      connectionRef = ConnectionReferenceCode.of(itemRef.getConnectionCode());
+      if ("current_connection".equals(itemRef.getConnectionCode())) {
+        connectionRef = ConnectionReferenceCode.of(currentConnectionCode);
+      } else {
+        connectionRef = ConnectionReferenceCode.of(itemRef.getConnectionCode());
+      }
     } else if (itemRef.getConnectionAlias() != null) {
       connectionRef = ConnectionReferenceAlias.of(itemRef.getConnectionAlias());
     } else {
@@ -255,7 +313,7 @@ public class ExampleMapper {
     return ItemReference.of(id, connectionRef);
   }
 
-  private static Contact contact(JsonContact contact) {
+  private Contact contact(JsonContact contact) {
     return Contact.builder()
         .role(contact.getRole())
         .email(contact.getEmail())
@@ -264,10 +322,10 @@ public class ExampleMapper {
         .build();
   }
 
-  private static DataType dataType(String type) {
+  private DataType dataType(String type) {
     switch (type.toLowerCase(Locale.ROOT)) {
-      case "boolean":
-        return DataType.Boolean;
+      case "string":
+        return DataType.String;
       case "byte":
         return DataType.Byte;
       case "short":
@@ -280,16 +338,28 @@ public class ExampleMapper {
         return DataType.Float;
       case "double":
         return DataType.Double;
-      case "string":
-        return DataType.String;
+      case "boolean":
+        return DataType.Boolean;
       case "date":
         return DataType.Date;
+      case "time":
+        return DataType.Time;
       case "timestamp":
         return DataType.Timestamp;
       case "binary":
         return DataType.Binary;
+      case "bigdecimal":
+        return DataType.BigDecimal;
+      case "geopoint":
+        return DataType.GeoPoint;
+      case "geoshape":
+        return DataType.GeoShape;
       case "struct":
         return DataType.Struct;
+      case "map":
+        return DataType.Map;
+      case "null":
+        return DataType.Null;
       default:
         return DataType.Unknown;
     }

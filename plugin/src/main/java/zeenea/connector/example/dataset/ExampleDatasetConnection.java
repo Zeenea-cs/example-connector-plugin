@@ -5,22 +5,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import zeenea.connector.Item;
 import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemInventory;
+import zeenea.connector.dataset.Dataset;
 import zeenea.connector.example.Config;
 import zeenea.connector.example.ExampleMapper;
 import zeenea.connector.example.Ids;
-import zeenea.connector.example.ItemFilters;
 import zeenea.connector.example.Metadata;
-import zeenea.connector.example.file.FileFinder;
 import zeenea.connector.example.file.FileItem;
-import zeenea.connector.example.filter.Filter;
-import zeenea.connector.example.json.Json;
+import zeenea.connector.example.file.FileRepository;
 import zeenea.connector.example.json.JsonDataset;
-import zeenea.connector.example.json.JsonVisualization;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
 import zeenea.connector.inventory.InventoryConnection;
@@ -33,7 +31,7 @@ public class ExampleDatasetConnection implements InventoryConnection {
   private final Config config;
 
   /** FileFinder instance. */
-  private final FileFinder fileFinder;
+  private final FileRepository fileRepository;
 
   /** Cache for extractItem item lookup. */
   private Map<ItemIdentifier, FileItem<JsonDataset>> datasetByItemId;
@@ -42,11 +40,11 @@ public class ExampleDatasetConnection implements InventoryConnection {
    * Create a new instance of {@code ExampleDatasetConnection}
    *
    * @param config The connection configuration.
-   * @param fileFinder The file finder.
+   * @param fileRepository The file finder.
    */
-  public ExampleDatasetConnection(Config config, FileFinder fileFinder) {
+  public ExampleDatasetConnection(Config config, FileRepository fileRepository) {
     this.config = Objects.requireNonNull(config);
-    this.fileFinder = Objects.requireNonNull(fileFinder);
+    this.fileRepository = Objects.requireNonNull(fileRepository);
   }
 
   @Override
@@ -67,18 +65,12 @@ public class ExampleDatasetConnection implements InventoryConnection {
         .with("connection_code", config.connectionCode())
         .info();
 
-    // Create a file partial filter to avoid reading files that could be filtered.
-    Filter filter = config.filter();
-    var fileFilter = ItemFilters.fileFilter(filter);
-
     // We use an intermediate list to be able to count items.
     // There is a known issue that the returned stream is closed before being consumed which make
     // the use of onClose() useless to add post processing operation.
     List<ItemInventory> inventory =
-        fileFinder.findZeeneaFiles(ctx).stream()
-            .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-            .flatMap(f -> Json.readItems(ctx, f, JsonDataset.class))
-            .filter(p -> filter.matches(ItemFilters.item(p, config.customProperties())))
+        fileRepository
+            .loadFileItems(ctx, JsonDataset.class)
             .map(
                 d ->
                     ItemInventory.of(
@@ -103,7 +95,85 @@ public class ExampleDatasetConnection implements InventoryConnection {
 
   @Override
   public Stream<Item> extractItems(Stream<ItemIdentifier> stream) {
-    throw new UnsupportedOperationException("TODO");
+    var ctx = TracingContext.extractItems(config.connectionCode());
+    log.entry("example_dataset_extract_items_start").context(ctx).info();
+
+    loadDatasets(ctx);
+
+    return stream.filter(this::isDataset).flatMap(id -> extractItem(ctx, id));
+  }
+
+  /**
+   * Extract an item.
+   *
+   * <p>The result is provided as a stream that may be null if the id doesn't match any existing
+   * item. This can happen if the item was remove from the source after the last inventory.
+   *
+   * @param ctx The tracing context.
+   * @param itemId The item identifier.
+   * @return A stream of datasets and processes. (Can be empty.)
+   */
+  private Stream<Item> extractItem(TracingContext ctx, ItemIdentifier itemId) {
+    log.entry("example_dataset_extract_item_start")
+        .context(ctx)
+        .with("item_id", Ids.log(itemId))
+        .info();
+
+    var fileItem = datasetByItemId.get(itemId);
+    if (fileItem == null) {
+      // Item not found in the source.
+      log.entry("example_dataset_extract_item_not_found")
+          .context(ctx)
+          .with("item_id", Ids.log(itemId))
+          .warn();
+      return Stream.empty();
+    }
+
+    var item = fileItem.getItem();
+
+    var dataset =
+        Dataset.builder()
+            .id(itemId)
+            .name(item.getName())
+            .description(item.getDescription())
+            .properties(ExampleMapper.properties(fileItem, config.customProperties()))
+            .contacts(ExampleMapper.contacts(item))
+            .sourceDatasets(ExampleMapper.sources(item))
+            .fields(ExampleMapper.fields(item, config.fieldProperties()))
+            .build();
+
+    return Stream.of(dataset);
+  }
+
+  /**
+   * Filter out items that are not datasets (typically, lineage processes). They should not be
+   * processed by the extractItem operation and will be updated/created by the processing of another
+   * dataset.
+   *
+   * @param itemId Item id.
+   * @return {@code true} if the item is a dataset to process.
+   */
+  private boolean isDataset(ItemIdentifier itemId) {
+    var idProps = itemId.getIdentificationProperties();
+    if (idProps.isEmpty()) return false;
+    var lastProp = idProps.get(idProps.size() - 1);
+    return !lastProp.getKey().equals("type");
+  }
+
+  /**
+   * Load the datasets from the files.
+   *
+   * @param ctx Tracing context.
+   */
+  private void loadDatasets(TracingContext ctx) {
+    if (datasetByItemId == null) {
+      datasetByItemId =
+          fileRepository
+              .loadFileItems(ctx, JsonDataset.class)
+              .collect(
+                  Collectors.toMap(
+                      v -> ExampleMapper.parseItemId(v.getItem().getId()), Function.identity()));
+    }
   }
 
   @Override

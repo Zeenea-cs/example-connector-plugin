@@ -41,7 +41,7 @@ public class Json {
    * @param <T> The element type.
    * @return The stream of the file items.
    */
-  public static <T extends JsonItem> Stream<FileItem<T>> readItems(
+  public static <T> Stream<FileItem<T>> readItems(
       TracingContext ctx, FileRef fileRef, Class<T> klass) {
     // Extract the connector case by convention on the root class name.
     var env = Strings.removePrefix(klass.getSimpleName(), "Json").toLowerCase();

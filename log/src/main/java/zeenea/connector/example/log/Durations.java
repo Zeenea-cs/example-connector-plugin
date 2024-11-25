@@ -4,9 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Tool to print human readable durations.
- */
+/** Tool to print human readable durations. */
 public class Durations {
   private static final Duration TEN_MILLIS = Duration.ofMillis(10);
 

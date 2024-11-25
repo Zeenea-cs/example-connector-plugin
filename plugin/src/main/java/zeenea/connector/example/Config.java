@@ -1,8 +1,10 @@
 package zeenea.connector.example;
 
-import static java.util.Objects.requireNonNull;
-
+import java.nio.file.Path;
+import zeenea.connector.ConnectionConfiguration;
 import zeenea.connector.example.filter.Filter;
+import zeenea.connector.example.log.Strings;
+import zeenea.connector.example.log.TracingContext;
 import zeenea.connector.example.property.CustomProperties;
 
 /**
@@ -18,23 +20,71 @@ public class Config {
   public static final String FIELD_CUSTOM_PROPERTIES_CONF = "field_custom_properties";
 
   private final String connectionCode;
-  private final Filter filter;
+  private final Path root;
+  private final String fileExtension;
   private final CustomProperties customProperties;
   private final CustomProperties fieldProperties;
+  private final Filter filter;
 
-  private Config(Builder builder) {
-    connectionCode = requireNonNull(builder.connectionCode);
-    filter = requireNonNull(builder.filter);
-    customProperties = requireNonNull(builder.customProperties);
-    fieldProperties = requireNonNull(builder.fieldProperties);
+  private Config(
+      String connectionCode,
+      Path root,
+      String fileExtension,
+      CustomProperties customProperties,
+      CustomProperties fieldProperties,
+      Filter filter) {
+    this.connectionCode = connectionCode;
+    this.root = root;
+    this.fileExtension = fileExtension;
+    this.customProperties = customProperties;
+    this.fieldProperties = fieldProperties;
+    this.filter = filter;
   }
 
-  public static Builder builder() {
-    return new Builder();
+  public static Config create(
+      TracingContext ctx, ConnectionConfiguration configuration, String defaultExtension) {
+    // Connection code
+    var connectionCode = configuration.getConnectionCode();
+
+    // Get file path for the configuration.
+    var path = configuration.getPath(PATH_CONF);
+
+    // File path is relative to scanner home folder.
+    var fullPath = path.isAbsolute() ? path : configuration.getScannerHomeFolder().resolve(path);
+
+    // Get the extension.
+    var extension =
+        configuration
+            .getStringOptional(EXTENSION_CONF)
+            .map(e -> Strings.ensurePrefix(".", e))
+            .orElse(Strings.ensurePrefix(".", defaultExtension + ".ndjson"));
+
+    // Parse custom properties.
+    var customProperties =
+        CustomProperties.parse(configuration.getStringOptional(CUSTOM_PROPERTIES_CONF).orElse(""));
+
+    // Parse field custom properties.
+    var fieldProperties =
+        CustomProperties.parse(
+            configuration.getStringOptional(FIELD_CUSTOM_PROPERTIES_CONF).orElse(""));
+
+    // Parser Filter.
+    var filter = ItemFilters.parseFilter(configuration, customProperties);
+
+    return new Config(
+        connectionCode, fullPath, extension, customProperties, fieldProperties, filter);
   }
 
   public String connectionCode() {
     return connectionCode;
+  }
+
+  public Path root() {
+    return root;
+  }
+
+  public String fileExtension() {
+    return fileExtension;
   }
 
   public Filter filter() {
@@ -47,36 +97,5 @@ public class Config {
 
   public CustomProperties fieldProperties() {
     return fieldProperties;
-  }
-
-  public static class Builder {
-    private String connectionCode;
-    private Filter filter;
-    private CustomProperties customProperties = CustomProperties.empty();
-    private CustomProperties fieldProperties = CustomProperties.empty();
-
-    public Builder connectionCode(String connectionCode) {
-      this.connectionCode = connectionCode;
-      return this;
-    }
-
-    public Builder filter(Filter filter) {
-      this.filter = filter;
-      return this;
-    }
-
-    public Builder customProperties(CustomProperties customProperties) {
-      this.customProperties = customProperties;
-      return this;
-    }
-
-    public Builder fieldProperties(CustomProperties fieldProperties) {
-      this.fieldProperties = fieldProperties;
-      return this;
-    }
-
-    public Config build() {
-      return new Config(this);
-    }
   }
 }

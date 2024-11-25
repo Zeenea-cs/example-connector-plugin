@@ -303,8 +303,7 @@ public class FilterParserTest {
   void parserShouldRejectInvalidToken() {
     var actual = assertThrows(FilterParsingException.class, () -> parser.parse("table = 123"));
     assertInstanceOf(TokenMgrException.class, actual.getCause());
-    assertEquals(
-        "Lexical error at line 1, column 9.  Encountered: '1' (49),", actual.getMessage());
+    assertEquals("Lexical error at line 1, column 9.  Encountered: '1' (49),", actual.getMessage());
   }
 
   @Test

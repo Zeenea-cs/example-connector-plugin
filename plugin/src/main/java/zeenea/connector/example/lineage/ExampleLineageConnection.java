@@ -7,15 +7,11 @@ import java.util.stream.Stream;
 import zeenea.connector.Item;
 import zeenea.connector.example.Config;
 import zeenea.connector.example.ExampleMapper;
-import zeenea.connector.example.ItemFilters;
 import zeenea.connector.example.Metadata;
-import zeenea.connector.example.file.FileFinder;
-import zeenea.connector.example.filter.Filter;
-import zeenea.connector.example.json.Json;
+import zeenea.connector.example.file.FileRepository;
 import zeenea.connector.example.json.JsonProcess;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
-import zeenea.connector.example.property.CustomProperties;
 import zeenea.connector.property.PropertyDefinition;
 import zeenea.connector.synchronize.SynchronizeConnection;
 
@@ -32,17 +28,17 @@ public class ExampleLineageConnection implements SynchronizeConnection {
   private final Config config;
 
   /** FileFinder instance. */
-  private final FileFinder fileFinder;
+  private final FileRepository fileRepository;
 
   /**
    * Construct a new instance of {@code ExampleLineageConnection}.
    *
    * @param config The connection configuration.
-   * @param fileFinder File finder instance.
+   * @param fileRepository File finder instance.
    */
-  public ExampleLineageConnection(Config config, FileFinder fileFinder) {
+  public ExampleLineageConnection(Config config, FileRepository fileRepository) {
     this.config = Objects.requireNonNull(config);
-    this.fileFinder = Objects.requireNonNull(fileFinder);
+    this.fileRepository = Objects.requireNonNull(fileRepository);
   }
 
   /**
@@ -69,13 +65,9 @@ public class ExampleLineageConnection implements SynchronizeConnection {
     var ctx = TracingContext.synchronize(config.connectionCode());
     log.entry("example_lineage_synchronize_start").context(ctx).info();
 
-    // Create a file partial filter to avoid reading files that could be filtered.
-    var fileFilter = ItemFilters.fileFilter(config.filter());
-
-    return fileFinder.findZeeneaFiles(ctx).stream()
-        .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-        .flatMap(f -> Json.readItems(ctx, f, JsonProcess.class))
-        .filter(p -> config.filter().matches(ItemFilters.item(p, config.customProperties())))
+    return fileRepository
+        .loadFileItems(ctx, JsonProcess.class)
+        // TODO move the process mapping here.
         .map(p -> ExampleMapper.dataProcess(p, config.customProperties()));
   }
 

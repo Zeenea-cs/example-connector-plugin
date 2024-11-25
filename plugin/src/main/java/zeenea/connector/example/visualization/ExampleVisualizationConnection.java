@@ -14,11 +14,9 @@ import zeenea.connector.common.ItemInventory;
 import zeenea.connector.example.Config;
 import zeenea.connector.example.ExampleMapper;
 import zeenea.connector.example.Ids;
-import zeenea.connector.example.ItemFilters;
 import zeenea.connector.example.Metadata;
-import zeenea.connector.example.file.FileFinder;
 import zeenea.connector.example.file.FileItem;
-import zeenea.connector.example.json.Json;
+import zeenea.connector.example.file.FileRepository;
 import zeenea.connector.example.json.JsonVisualization;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
@@ -33,7 +31,7 @@ public class ExampleVisualizationConnection implements InventoryConnection {
   private final Config config;
 
   /** FileFinder instance. */
-  private final FileFinder fileFinder;
+  private final FileRepository fileRepository;
 
   /** Cache for extractItem item lookup. */
   private Map<ItemIdentifier, FileItem<JsonVisualization>> visualizationByItemId;
@@ -42,11 +40,11 @@ public class ExampleVisualizationConnection implements InventoryConnection {
    * Create a new instance of {@code ExampleDatasetConnection}
    *
    * @param config The connection configuration.
-   * @param fileFinder File finder instance.
+   * @param fileRepository File finder instance.
    */
-  public ExampleVisualizationConnection(Config config, FileFinder fileFinder) {
+  public ExampleVisualizationConnection(Config config, FileRepository fileRepository) {
     this.config = Objects.requireNonNull(config);
-    this.fileFinder = Objects.requireNonNull(fileFinder);
+    this.fileRepository = Objects.requireNonNull(fileRepository);
   }
 
   @Override
@@ -63,17 +61,12 @@ public class ExampleVisualizationConnection implements InventoryConnection {
     var ctx = TracingContext.inventory(config.connectionCode());
     log.entry("example_visualization_inventory_start").context(ctx).info();
 
-    // Create a file partial filter to avoid reading files that could be filtered.
-    var fileFilter = ItemFilters.fileFilter(config.filter());
-
     // We use an intermediate list to be able to count items.
     // There is a known issue that the returned stream is closed before being consumed which make
     // the use of onClose() useless to add post processing operation.
     List<ItemInventory> inventory =
-        fileFinder.findZeeneaFiles(ctx).stream()
-            .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-            .flatMap(f -> Json.readItems(ctx, f, JsonVisualization.class))
-            .filter(p -> config.filter().matches(ItemFilters.item(p, config.customProperties())))
+        fileRepository
+            .loadFileItems(ctx, JsonVisualization.class)
             .map(
                 d ->
                     ItemInventory.of(
@@ -106,6 +99,16 @@ public class ExampleVisualizationConnection implements InventoryConnection {
     return stream.filter(this::isVisualization).flatMap(id -> extractItem(ctx, id));
   }
 
+  /**
+   * Extract an item.
+   *
+   * <p>The result is provided as a stream that may be null if the id doesn't match any existing
+   * item. This can happen if the item was remove from the source after the last inventory.
+   *
+   * @param ctx The tracing context.
+   * @param itemId The item identifier.
+   * @return A stream of visualisations. (Can be empty.)
+   */
   private Stream<Item> extractItem(TracingContext ctx, ItemIdentifier itemId) {
     log.entry("example_visualization_extract_item_start")
         .context(ctx)
@@ -113,7 +116,14 @@ public class ExampleVisualizationConnection implements InventoryConnection {
         .info();
 
     var fileItem = visualizationByItemId.get(itemId);
-    if (fileItem == null) return Stream.empty();
+    if (fileItem == null) {
+      // Item not found in the source.
+      log.entry("example_visualization_extract_item_not_found")
+          .context(ctx)
+          .with("item_id", Ids.log(itemId))
+          .warn();
+      return Stream.empty();
+    }
 
     var item = fileItem.getItem();
 
@@ -131,23 +141,29 @@ public class ExampleVisualizationConnection implements InventoryConnection {
     return Stream.of(visualization);
   }
 
+  /**
+   * Filter out embedded items automatically created by the platform.
+   *
+   * @param itemId Item id.
+   * @return {@code true} if the item is a visualization.
+   */
   private boolean isVisualization(ItemIdentifier itemId) {
     var idProps = itemId.getIdentificationProperties();
     if (idProps.isEmpty()) return false;
     var lastProp = idProps.get(idProps.size() - 1);
-    return !lastProp.getKey().equals("embedded_type")
-        || lastProp.getValue().equals("visualization");
+    return !lastProp.getKey().equals("embedded_type");
   }
 
+  /**
+   * Load the visualizations from the files.
+   *
+   * @param ctx Tracing context.
+   */
   private void loadVisualizations(TracingContext ctx) {
     if (visualizationByItemId == null) {
-      // Create a file partial filter to avoid reading files that could be filtered.
-      var fileFilter = ItemFilters.fileFilter(config.filter());
       visualizationByItemId =
-          fileFinder.findZeeneaFiles(ctx).stream()
-              .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
-              .flatMap(f -> Json.readItems(ctx, f, JsonVisualization.class))
-              .filter(v -> config.filter().matches(ItemFilters.item(v, config.customProperties())))
+          fileRepository
+              .loadFileItems(ctx, JsonVisualization.class)
               .collect(
                   Collectors.toMap(
                       v -> ExampleMapper.parseItemId(v.getItem().getId()), Function.identity()));

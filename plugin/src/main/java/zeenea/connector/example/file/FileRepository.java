@@ -6,21 +6,32 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import zeenea.connector.ConnectionConfiguration;
+import java.util.stream.Stream;
 import zeenea.connector.example.Config;
+import zeenea.connector.example.ItemFilters;
+import zeenea.connector.example.json.Json;
+import zeenea.connector.example.json.JsonItem;
 import zeenea.connector.example.log.SimpleLogger;
-import zeenea.connector.example.log.Strings;
 import zeenea.connector.example.log.TracingContext;
 
-public class FileFinder {
-  private static final SimpleLogger log = SimpleLogger.of(FileFinder.class);
+public class FileRepository {
+  private static final SimpleLogger log = SimpleLogger.of(FileRepository.class);
 
-  private final Path root;
-  private final String extension;
+  private final Config config;
 
-  public FileFinder(Path root, String extension) {
-    this.root = Objects.requireNonNull(root);
-    this.extension = Objects.requireNonNull(extension);
+  public FileRepository(Config config) {
+    this.config = Objects.requireNonNull(config);
+  }
+
+  public <E extends JsonItem> Stream<FileItem<E>> loadFileItems(
+      TracingContext ctx, Class<E> klass) {
+    // Create a file partial filter to avoid reading files that could be filtered.
+    var fileFilter = ItemFilters.fileFilter(config.filter());
+
+    return findZeeneaFiles(ctx).stream()
+        .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
+        .flatMap(f -> Json.readItems(ctx, f, klass))
+        .filter(v -> config.filter().matches(ItemFilters.item(v, config.customProperties())));
   }
 
   /**
@@ -30,6 +41,8 @@ public class FileFinder {
    * @return A list of zeenea file references.
    */
   public List<FileRef> findZeeneaFiles(TracingContext ctx) {
+    var root = config.root();
+    var extension = config.fileExtension();
     Path fileName = root.getFileName();
     if (fileName != null && fileName.toString().endsWith(extension) && Files.isRegularFile(root)) {
       Path parent = root.getParent();
@@ -50,21 +63,5 @@ public class FileFinder {
           .with("root", root)
           .exception(e, FindFileException::new);
     }
-  }
-
-  public static FileFinder create(ConnectionConfiguration configuration, String defaultExtension) {
-    // Get file path for the configuration.
-    var path = configuration.getPath(Config.PATH_CONF);
-
-    // File path is relative to scanner home folder.
-    var fullPath = path.isAbsolute() ? path : configuration.getScannerHomeFolder().resolve(path);
-
-    var extension =
-        configuration
-            .getStringOptional(Config.EXTENSION_CONF)
-            .map(e -> Strings.ensurePrefix(".", e))
-            .orElse(Strings.ensurePrefix(".", defaultExtension + ".ndjson"));
-
-    return new FileFinder(fullPath, extension);
   }
 }

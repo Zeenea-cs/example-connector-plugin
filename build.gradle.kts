@@ -81,7 +81,7 @@ tasks.test {
 tasks.jar {
     manifest {
         attributes(
-            "Implementation-Title" to "Example Zeenea Connector Plugin",
+            "Implementation-Title" to project.description,
             "Implementation-Version" to project.version,
             "Implementation-Vendor" to "Zeenea <support@zeenea.com>"
         )

@@ -1,19 +1,19 @@
 package zeenea.connector.example.json;
 
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
+import java.util.Objects;
 
 public class JsonDataset extends JsonItem {
-  private @NotNull List<JsonField> fields;
+  private List<JsonField> fields = List.of();
   private List<String> primaryKey = List.of();
   private List<JsonForeignKey> foreignKeys = List.of();
 
-  public @NotNull List<JsonField> getFields() {
+  public List<JsonField> getFields() {
     return fields;
   }
 
-  public void setFields(@NotNull List<JsonField> fields) {
-    this.fields = fields;
+  public void setFields(List<JsonField> fields) {
+    this.fields = Objects.requireNonNull(fields);
   }
 
   public List<String> getPrimaryKey() {

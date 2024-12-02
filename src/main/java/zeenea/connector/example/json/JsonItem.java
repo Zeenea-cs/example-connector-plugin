@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public abstract class JsonItem implements Customizable {
   private String id;
@@ -44,7 +45,7 @@ public abstract class JsonItem implements Customizable {
   }
 
   public void setContacts(List<JsonContact> contacts) {
-    this.contacts = contacts;
+    this.contacts = Objects.requireNonNull(contacts);
   }
 
   public List<JsonItemRef> getSources() {
@@ -52,7 +53,7 @@ public abstract class JsonItem implements Customizable {
   }
 
   public void setSources(List<JsonItemRef> sources) {
-    this.sources = sources;
+    this.sources = Objects.requireNonNull(sources);
   }
 
   @JsonAnyGetter

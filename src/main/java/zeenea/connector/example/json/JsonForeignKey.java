@@ -1,12 +1,13 @@
 package zeenea.connector.example.json;
 
 import java.util.List;
+import java.util.Objects;
 
 public final class JsonForeignKey {
   private String name;
   private String targetDataset;
-  private List<String> targetFields;
-  private List<String> sourceFields;
+  private List<String> targetFields = List.of();
+  private List<String> sourceFields = List.of();
 
   public String getName() {
     return name;
@@ -29,7 +30,7 @@ public final class JsonForeignKey {
   }
 
   public void setTargetFields(List<String> targetFields) {
-    this.targetFields = targetFields;
+    this.targetFields = Objects.requireNonNull(targetFields);
   }
 
   public List<String> getSourceFields() {
@@ -37,6 +38,6 @@ public final class JsonForeignKey {
   }
 
   public void setSourceFields(List<String> sourceFields) {
-    this.sourceFields = sourceFields;
+    this.sourceFields = Objects.requireNonNull(sourceFields);
   }
 }

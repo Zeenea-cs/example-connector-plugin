@@ -1,6 +1,7 @@
 package zeenea.connector.example.json;
 
 import java.util.List;
+import java.util.Objects;
 
 public final class JsonVisualization extends JsonItem {
   private List<JsonField> fields = List.of();
@@ -10,6 +11,6 @@ public final class JsonVisualization extends JsonItem {
   }
 
   public void setFields(List<JsonField> fields) {
-    this.fields = fields;
+    this.fields = Objects.requireNonNull(fields);
   }
 }

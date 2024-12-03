@@ -10,6 +10,7 @@ import java.util.Objects;
 
 public abstract class JsonItem implements Customizable {
   private String id;
+  private String label;
   private String name;
   private String description;
   private List<JsonContact> contacts = List.of();
@@ -22,6 +23,14 @@ public abstract class JsonItem implements Customizable {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public String getLabel() {
+    return label;
+  }
+
+  public void setLabel(String label) {
+    this.label = label;
   }
 
   public String getName() {

@@ -76,7 +76,7 @@ public class ExampleVisualizationConnection implements InventoryConnection {
                 d ->
                     ItemInventory.of(
                         mapper.parseItemId(d.getItem().getId()),
-                        mapper.parseItemLabels(d.getItem().getId())))
+                        mapper.parseItemLabels(d.getItem())))
             .peek(
                 i ->
                     log.entry("example_visualization_inventory_inventory_item_found")

@@ -1,7 +1,5 @@
 package zeenea.connector.example.dataset;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
@@ -16,6 +14,7 @@ import zeenea.connector.contact.Contact;
 import zeenea.connector.dataset.DataType;
 import zeenea.connector.dataset.Dataset;
 import zeenea.connector.dataset.ForeignKey;
+import zeenea.connector.example.Fix;
 import zeenea.connector.example.Metadata;
 import zeenea.connector.field.Field;
 import zeenea.connector.property.NumberPropertyDefinition;
@@ -151,7 +150,7 @@ class ExampleDatasetConnectionTest {
                           .build())
                   .primaryKeys("album_id")
                   .foreignKeys(
-                      build(
+                      Fix.build(
                           ForeignKey.builder()
                               .name("fk_albums_artists")
                               .targetDataset("/schema=music/table=artists")
@@ -208,26 +207,6 @@ class ExampleDatasetConnectionTest {
                           .connectionCode("test_dataset")
                           .build())
                   .build());
-    }
-  }
-
-  // Wait for a fix of zeenea.connector.dataset.ForeignKey.Builder#build visibility.
-  private static final Method BUILD_FK;
-
-  static {
-    try {
-      BUILD_FK = ForeignKey.Builder.class.getDeclaredMethod("build");
-      BUILD_FK.setAccessible(true);
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private ForeignKey build(ForeignKey.Builder builder) {
-    try {
-      return (ForeignKey) BUILD_FK.invoke(builder);
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(e);
     }
   }
 }

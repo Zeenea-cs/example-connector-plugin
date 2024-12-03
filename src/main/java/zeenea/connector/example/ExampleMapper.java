@@ -1,7 +1,5 @@
 package zeenea.connector.example;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -72,13 +70,21 @@ public class ExampleMapper {
             .collect(Collectors.toList()));
   }
 
-  public List<String> parseItemLabels(String id) {
-    return ID_SEP
-        .splitAsStream(id)
-        .filter(Predicate.not(String::isEmpty))
-        .map(this::parseIdProperty)
-        .map(IdentificationProperty::getValue)
-        .collect(Collectors.toList());
+  public List<String> parseItemLabels(JsonItem item) {
+    String label = item.getLabel();
+    if (label != null) {
+      return ID_SEP
+          .splitAsStream(item.getLabel())
+          .filter(Predicate.not(String::isEmpty))
+          .collect(Collectors.toList());
+    } else {
+      return ID_SEP
+          .splitAsStream(item.getId())
+          .filter(Predicate.not(String::isEmpty))
+          .map(this::parseIdProperty)
+          .map(IdentificationProperty::getValue)
+          .collect(Collectors.toList());
+    }
   }
 
   public IdentificationProperty parseIdProperty(String property) {
@@ -261,35 +267,17 @@ public class ExampleMapper {
     return builder;
   }
 
-  // Wait for a fix of zeenea.connector.dataset.ForeignKey.Builder#build visibility.
-  private static final Method BUILD_FK;
-
-  static {
-    try {
-      BUILD_FK = ForeignKey.Builder.class.getDeclaredMethod("build");
-      BUILD_FK.setAccessible(true);
-    } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   public List<ForeignKey> foreignKeys(List<JsonForeignKey> foreignKeys) {
     // Wait for a fix of zeenea.connector.dataset.ForeignKey.Builder#build visibility.
     return list(
         foreignKeys,
-        fk -> {
-          try {
-            return (ForeignKey)
-                BUILD_FK.invoke(
-                    ForeignKey.builder()
-                        .name(fk.getName())
-                        .targetDataset(fk.getTargetDataset())
-                        .targetFields(fk.getTargetFields())
-                        .sourceFields(fk.getSourceFields()));
-          } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-          }
-        });
+        fk ->
+            Fix.build(
+                ForeignKey.builder()
+                    .name(fk.getName())
+                    .targetDataset(fk.getTargetDataset())
+                    .targetFields(fk.getTargetFields())
+                    .sourceFields(fk.getSourceFields())));
   }
 
   private <E, R> List<R> list(List<E> list, Function<? super E, ? extends R> elementMapper) {

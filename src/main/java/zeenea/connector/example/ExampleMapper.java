@@ -3,7 +3,7 @@ package zeenea.connector.example;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -211,7 +211,7 @@ public class ExampleMapper {
               try {
                 builder.put(
                     (InstantPropertyDefinition) property.getDefinition(),
-                    Instant.parse(value.textValue()));
+                    ZonedDateTime.parse(value.textValue()).toInstant());
               } catch (DateTimeParseException e) {
                 log.entry("example_mapper_invalid_instant")
                     .with("property_code", property.getCode())

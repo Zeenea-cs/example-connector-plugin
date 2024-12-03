@@ -16,6 +16,8 @@ import zeenea.connector.dataset.Dataset;
 import zeenea.connector.dataset.ForeignKey;
 import zeenea.connector.example.Fix;
 import zeenea.connector.example.Metadata;
+import zeenea.connector.example.TestConfiguration;
+import zeenea.connector.example.TestPath;
 import zeenea.connector.field.Field;
 import zeenea.connector.property.NumberPropertyDefinition;
 import zeenea.connector.property.PropertiesBuilder;

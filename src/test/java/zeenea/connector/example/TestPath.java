@@ -1,4 +1,4 @@
-package zeenea.connector.example.dataset;
+package zeenea.connector.example;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;

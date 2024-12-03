@@ -1,4 +1,4 @@
-package zeenea.connector.example.dataset;
+package zeenea.connector.example.visualization;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,7 +13,8 @@ import zeenea.connector.common.ItemReference;
 import zeenea.connector.contact.Contact;
 import zeenea.connector.dataset.DataType;
 import zeenea.connector.example.Metadata;
-import zeenea.connector.example.visualization.ExampleVisualizationConnector;
+import zeenea.connector.example.TestConfiguration;
+import zeenea.connector.example.TestPath;
 import zeenea.connector.field.Field;
 import zeenea.connector.property.PropertiesBuilder;
 import zeenea.connector.property.PropertyDefinition;
@@ -122,7 +123,7 @@ class ExampleVisualizationConnectionTest {
                           .itemIdentifier(
                               IdentificationProperty.of("schema", "music"),
                               IdentificationProperty.of("table", "artist_album_count"))
-                          .connectionAlias("example_dashboard")
+                          .connectionAlias("example_dataset")
                           .build())
                   .build());
     }

@@ -1,4 +1,4 @@
-package zeenea.connector.example.dataset;
+package zeenea.connector.example;
 
 import java.nio.file.Path;
 import java.util.HashMap;

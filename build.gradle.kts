@@ -10,28 +10,20 @@ description = "Example Zeenea Connector Plugin"
 
 repositories {
     mavenCentral()
-    maven {
-        name = "Zeenea Connector SDK"
-        url = uri("https://maven.pkg.github.com/zeenea/public-connector-sdk")
-        credentials {
-            username =
-                System.getenv("GITHUB_ACTOR") ?: project.findProperty("github.actor") as String?
-            password =
-                System.getenv("GITHUB_TOKEN") ?: project.findProperty("github.token") as String?
-        }
-    }
 }
 
 dependencies {
-    compileOnly(libs.zeenea.public.connector.sdk)
-    testImplementation(libs.zeenea.public.connector.sdk)
+    val jarFiles = fileTree("lib") { include("*.jar") }
+    compileOnly(jarFiles)
+    testImplementation(jarFiles)
+    compileOnly(libs.pf4j)
+    testImplementation(libs.pf4j)
     annotationProcessor(libs.pf4j)
     implementation(platform(libs.jackson.bom))
     implementation(libs.jackson.core)
     implementation(libs.jackson.databind)
     implementation(libs.jackson.datatype.jdk8)
     implementation(libs.jackson.datatype.jsr310)
-//    compileOnly(libs.jetbrains.annotations)
     implementation(project(":log"))
     implementation(project(":filter"))
     implementation(project(":custom-property"))

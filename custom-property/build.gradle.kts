@@ -10,21 +10,12 @@ description = "Zeenea Example Custom Source Property Library"
 
 repositories {
     mavenCentral()
-    maven {
-        name = "Zeenea Connector SDK"
-        url = uri("https://maven.pkg.github.com/zeenea/public-connector-sdk")
-        credentials {
-            username =
-                System.getenv("GITHUB_ACTOR") ?: project.findProperty("github.actor") as String?
-            password =
-                System.getenv("GITHUB_TOKEN") ?: project.findProperty("github.token") as String?
-        }
-    }
 }
 
 dependencies {
-    compileOnly(libs.zeenea.public.connector.sdk)
-    testImplementation(libs.zeenea.public.connector.sdk)
+    val jarFiles = fileTree("${rootDir}/lib") { include("*.jar") }
+    compileOnly(jarFiles)
+    testImplementation(jarFiles)
     compileOnly(libs.jetbrains.annotations)
 
     /*

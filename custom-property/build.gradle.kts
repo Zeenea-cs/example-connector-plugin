@@ -13,7 +13,10 @@ repositories {
 }
 
 dependencies {
-    val jarFiles = fileTree("${rootDir}/lib") { include("*.jar") }
+    val jarFiles = fileTree("${rootDir}/lib") {
+        include("*.jar")
+        exclude("*-javadoc.jar")
+    }
     compileOnly(jarFiles)
     testImplementation(jarFiles)
     compileOnly(libs.jetbrains.annotations)

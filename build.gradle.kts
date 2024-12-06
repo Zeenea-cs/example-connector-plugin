@@ -19,7 +19,10 @@ dependencies {
      * So the dependency can be added as a file in the project.
      * You will find the jar in the public-connector-sdk-version.jar in the folder lib of the scanner.
      */
-    val jarFiles = fileTree("lib") { include("*.jar") }
+    val jarFiles = fileTree("${rootDir}/lib") {
+        include("*.jar")
+        exclude("*-javadoc.jar")
+    }
     compileOnly(jarFiles)
     testImplementation(jarFiles)
 

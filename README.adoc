@@ -154,13 +154,16 @@ For the same reason, the slf4j libraries should not be included in the package, 
 .Public Connector SDK dependencies
 ----
 dependencies {
-    val jarFiles = fileTree("lib") { include("*.jar") }  <1>
-    compileOnly(jarFiles)               <2>
-    testImplementation(jarFiles)        <3>
-    compileOnly(libs.pf4j)              <4>
-    testImplementation(libs.pf4j)       <5>
-    annotationProcessor(libs.pf4j)      <6>
-    implementation(platform(libs.jackson.bom))  <7>
+    val jarFiles = fileTree("lib") {    <1>
+        include("*.jar")
+        exclude("*-javadoc.jar")        <2>
+    }
+    compileOnly(jarFiles)               <3>
+    testImplementation(jarFiles)        <4>
+    compileOnly(libs.pf4j)              <5>
+    testImplementation(libs.pf4j)       <6>
+    annotationProcessor(libs.pf4j)      <7>
+    implementation(platform(libs.jackson.bom))  <8>
     implementation(libs.jackson.core)
     // ...
 ----
@@ -169,13 +172,14 @@ dependencies {
 Currently, the maven repository containing the jar is private.
 So the dependency can be added as a file in the project.
 You will find the jar in the public-connector-sdk-_version_.jar in the folder lib of the scanner.
-<2> The public-connector-sdk library is added in compile-only scope.
-<3> The public-connector-sdk library is added in test scope.
-<4> The PF4J library is added in compile-only scope.
-<5> The PF4J library is added in test scope.
-<6> The PF4J library is added in annotation processing scope.
+<2> Excludes javadoc jars from the dependencies.
+<3> The public-connector-sdk library is added in compile-only scope.
+<4> The public-connector-sdk library is added in test scope.
+<5> The PF4J library is added in compile-only scope.
+<6> The PF4J library is added in test scope.
+<7> The PF4J library is added in annotation processing scope.
 This is required to create the _META-INF/extensions.idx_ index.
-<7> Other dependency are declared as usually.
+<8> Other dependency are declared as usually.
 
 Because the SL4J libraries can come from any dependency or recursive dependency, we exclude them from the distribution when packaging:
 

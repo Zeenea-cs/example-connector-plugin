@@ -30,6 +30,7 @@ class ExampleLineageConnectionTest {
           .connectionName("Example Lineage")
           .pathParam("path", TestPath.parentFolder("dataset/example.lineage.ndjson"))
           .stringParam("custom_properties", "string type\ninstant last_execution from 'lastRun'")
+          .stringParam("filter", "type = 'procedure'")
           .build();
 
   private final StringPropertyDefinition typeProperty = PropertyDefinition.string("type");

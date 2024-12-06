@@ -3,6 +3,7 @@ package zeenea.connector.example;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import zeenea.connector.ConnectionConfiguration;
 import zeenea.connector.example.file.FileItem;
 import zeenea.connector.example.file.FileRef;
@@ -21,6 +22,8 @@ public class ItemFilters {
   public static final FilterKey ID_KEY = FilterKey.text("id");
   public static final FilterKey NAME_KEY = FilterKey.text("name");
   public static final FilterKey PATH_KEY = FilterKey.text("path");
+
+  private static final Pattern INVALID_PROPERTY_CHAR = Pattern.compile("[^_a-zA-Z0-9]");
 
   public static Filter parseFilter(
       ConnectionConfiguration configuration, CustomProperties customProperties) {
@@ -50,7 +53,7 @@ public class ItemFilters {
     kvList.add(FilterKeyValue.text(NAME_KEY, item.getName()));
     kvList.add(FilterKeyValue.text(PATH_KEY, fileItem.getFileRef().getRelativePath()));
     addCustomPropertiesValues(item, customProperties, kvList);
-    return FilterItem.of();
+    return FilterItem.of(kvList);
   }
 
   public static FilterItem fileItem(FileRef f) {
@@ -60,35 +63,47 @@ public class ItemFilters {
   private static void addCustomProperties(
       CustomProperties customProperties, HashSet<FilterKey> filterKeys) {
     for (CustomProperty property : customProperties.getProperties()) {
-      String propertyCode = property.getCode();
+      String propertyCode = filterKeyName(property.getCode());
       switch (property.getType()) {
         case STRING:
         case NUMBER:
         case INSTANT:
         case LONG_TEXT:
-          try {
-            filterKeys.add(FilterKey.text(propertyCode));
-          } catch (IllegalArgumentException e) {
-            // TODO log at warn level
-          }
+          filterKeys.add(FilterKey.text(propertyCode));
           break;
         case TAG:
-          try {
-            filterKeys.add(FilterKey.list(propertyCode));
-          } catch (IllegalArgumentException e) {
-            // TODO log at warn level
-          }
+          filterKeys.add(FilterKey.list(propertyCode));
           break;
         case URL:
-          try {
-            filterKeys.add(FilterKey.text(propertyCode + "_url"));
-            filterKeys.add(FilterKey.text(propertyCode + "_label"));
-          } catch (IllegalArgumentException e) {
-            // TODO log at warn level
-          }
+          filterKeys.add(FilterKey.text(propertyCode + "_url"));
+          filterKeys.add(FilterKey.text(propertyCode + "_label"));
           break;
       }
     }
+  }
+
+  /**
+   * Because custom properties can have code which are invalid as a filter key, this method tranform
+   * them in a valid key.
+   *
+   * <p>Transformation list:
+   *
+   * <ol>
+   *   <li>Any invalid character is replaced by an underscore.
+   *   <li>If the first character is a digit, an undescore is added at the begin of the key.
+   * </ol>
+   *
+   * @param code Custom property code.
+   * @return A valid filter key.
+   */
+  private static String filterKeyName(String code) {
+    if (code.isEmpty()) return "_";
+    var matcher = INVALID_PROPERTY_CHAR.matcher(code);
+    var filterKey = matcher.replaceAll("_");
+    if (Character.isDigit(filterKey.charAt(0))) {
+      filterKey = "_" + filterKey;
+    }
+    return filterKey;
   }
 
   private static void addCustomPropertiesValues(

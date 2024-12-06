@@ -1,0 +1,373 @@
+= Example Connector Plugin
+:icons: font
+:nofooter:
+
+== The Plugin
+
+=== goals
+
+This plugin provides examples of connectors developed with the new public connector sdk.
+
+It provides three connectors:
+
+* a dataset connector (<<Example Dataset Connector>>),
+* a visualization connector (<<Example Visualization Connector>>),
+* and a lineage connector (<<Example Lineage Connector>>).
+
+=== Data sources
+
+To avoid the complexity of real data stores and processing, the data comes in the form of NDJSON files in a repertory of the local file system.
+
+NDJSON, New line Delimited JSON, is a text file format which contains a list of JSON elements, one per line.
+
+.Example of a NDJSON file: cities.ndjson
+----
+{"rank": "3111", "name": "Oakville", "population": 213759}
+{"rank": "5004", "name": "Lewisville", "population": 125028}
+{"rank": "9097", "name": "Randers", "population": 64057}
+----
+
+The actual JSON format used by these connectors is described by the classes in package `zeenea.connector.example.json`.
+Depending on the connector, the root item class is:
+
+* `zeenea.connector.example.json.JsonDataset`,
+* `zeenea.connector.example.json.JsonVisualization`,
+* or `zeenea.connector.example.json.JsonProcess`.
+
+Examples are given in the folder _src/test/resources/dataset_.
+
+=== Custom Properties
+
+You can add any custom properties at the JSON file root level.
+The must be declared at the connection level with the _custom_properties_ configuration parameter.
+
+This parameter takes a list of properties declaration following the given pattern:
+
+----
+<type> <name> [ from <json_name> ]
+----
+
+where
+
+type:: is the Zeenea type of the property.
+Its value must be one of:
++
+* string;
+* long text ("long" can be ommited);
+* number;
+* url;
+* instant;
+* tag.
+
+name:: is the name of the property in Zeenea.
+
+json_name:: is the name of the property in the JSON file.
+If the "from" clause is missing, json_name is the same as name.
+
+Name or json_name should be either quoted by single quotes ("'") or composed of letters, numbers and underscores ("_").
+
+.Example of the definition of three properties.
+----
+custom_properties = """
+    string type
+    string schema
+    number 'row count' from rows
+"""
+----
+
+== The Project organization
+
+=== Build the project
+
+The project is a Java project managed by Gradle.
+In order to build it, you will need a Java 11 JDK installed and execute the usual gradle commands.
+
+.Build command
+----
+# Linux
+$ ./gradlew build
+
+# Windows PowerShell
+PS> .\gradlew build
+----
+
+=== Project version
+
+The versions of this project are externally defined at release time.
+By default, the version is "dev".
+When creating a new release, the version should be defined by the `VERSION` environment variable, which will be set by the build environment.
+
+.Extract of build.gradle.kts
+----
+version = System.getenv("VERSION") ?: "dev"
+----
+
+You can build the release version with the given command:
+
+----
+# Linux
+$ VERSION=1.0.0 ./gradlew build
+
+# Windows PowerShell
+PS> $env:VERSION='1.0.0'
+PS> .\gradlew build
+----
+
+=== Plug-in Manifest
+
+The plug-in is manifest is defined in the file _src/main/plugin/plugin.properties_.
+This manifest is added at the root of the package during the packaging of the plug-in.
+
+.Extract of build.gradle.kts
+----
+distributions {
+    main {
+        contents {
+            // ...
+            from("$projectDir/src/main/plugin") {  <1>
+                expand("project_version" to project.version) <2>
+                filteringCharset = "UTF-8"
+            }
+            into("/")
+        }
+    }
+}
+----
+
+<1> Integrate Manifest in the plugin artifact.
+<2> Ensure the version of the plugin matches the project version.
+
+=== Dependencies
+
+Dependencies are listed in the dependencies section of the _build.gradle.kts_ file.
+They mainly consists of public-connector-sdk and pf4j for the connector development and jackson for reading the NDJSON source files.
+
+Some dependencies are need to build the connector but should not be included in the package because they are already provided by the scanner.
+
+[WARNING]
+====
+Including the public-connector-sdk in the package will prevents the connector to be loaded by the scanner because its classes will be present in two different versions from different classloaders.
+
+For the same reason, the slf4j libraries should not be included in the package, otherwise the logs written by the connector won't be proceeded by the scanner.
+====
+
+.Public Connector SDK dependencies
+----
+dependencies {
+    val jarFiles = fileTree("lib") { include("*.jar") }  <1>
+    compileOnly(jarFiles)               <2>
+    testImplementation(jarFiles)        <3>
+    compileOnly(libs.pf4j)              <4>
+    testImplementation(libs.pf4j)       <5>
+    annotationProcessor(libs.pf4j)      <6>
+    implementation(platform(libs.jackson.bom))  <7>
+    implementation(libs.jackson.core)
+    // ...
+----
+
+<1> Includes the public-connector-sdk as a jar file in the _lib_ folder.
+Currently, the maven repository containing the jar is private.
+So the dependecy can be added as a file in the project.
+You will find the jar in the public-connector-sdk-_version_.jar in the folder lib of the scanner.
+<2> The public-connector-sdk library is added in compile-only scope.
+<3> The public-connector-sdk library is added in test scope.
+<4> The PF4J library is added in compile-only scope.
+<5> The PF4J library is added in test scope.
+<6> The PF4J library is added in annotation processing scope.
+This is required to create the _META-INF/extensions.idx_ index.
+<7> Other dependency are declared as usually.
+
+Because the SL4J libraries can come from any dependeny or recursive dependency, we exclude them from the distribution when packaging:
+
+.Exclude SLF4J libraries
+----
+distributions {
+    main {
+        contents {
+            // ...
+            from(configurations.runtimeClasspath) {
+                into("lib")
+                // We explicitly exclude these libraries which could have been added by recursive dependencies.
+                exclude("slf4j-api*.jar")
+                exclude("commons-logging*.jar")
+            }
+            // ...
+----
+
+=== Subprojects
+
+Some technical implementations used by the example connectors have been isolated in subprojects.
+So you don't need to bother about them and focus on the actual connector development.
+
+== Example Dataset Connector
+
+This is an example of a dataset connector.
+
+Connector id:: example-dataset
+Connector class:: zeenea.connector.example.dataset.ExampleDatasetConnector
+Connection class:: zeenea.connector.example.dataset.ExampleDatasetConnection
+
+=== Configuration
+
+The parameters of the connector are:
+
+path:: The root path where the NDJSON files are stored.
+This path can be absolute or relative to the scanner home directory.
+
+extension:: The extension of the files containing datasets.
+The default value is "dataset.ndjson".
+
+custom_properties:: Declaration of the dataset custom properties.
+See <<Custom Properties>> for more information.
+
+field_custom_properties:: Declaration of the field custom properties.
+See <<Custom Properties>> for more information.
+This is the same as for the dataset, but it applies to the fields.
+
+filter:: Boolean expression in order to select the datasets to inventory.
+The expression is the same as with the usual Zeenea filters.
+
+[NOTE]
+.Filter keys
+====
+id:: The id field of the JSON object.
+name:: The name field of the JSON object.
+path:: The path of the file containing the object relative to the root path configured.
+custom property name:: Any custom property defined in, _custom_properties_.
+====
+
+.Configuration file example
+----
+name = "Example Dataset"        <1>
+code = "example_dataset"        <2>
+connector_id = "example-dataset"
+enabled = true
+path = "../data"                <3>
+custom_properties = """         <4>
+    string type
+    string schema
+    number 'row count' from rows
+"""
+field_custom_properties = """   <5>
+    boolean 'is computed' from computed
+    long text formula
+"""
+filter = """
+   id starts with '/schema=music' <6>
+"""
+----
+
+<1> Name of the connection.
+<2> Code of the connection.
+<3> Path to the root folder where the files are stored.
+<4> Dataset custom properties.
+<5> Fields custom properties.
+<6> Filter on the dataset identifier.
+
+== Example Visualization Connector
+
+This is an example of a visualization connector.
+
+Connector id:: example-visualization
+Connector class:: zeenea.connector.example.visualization.ExampleVisualizationConnector
+Connection class:: zeenea.connector.example.visualization.ExampleVisualizationConnection
+
+=== Configuration
+
+The parameters of the connector are:
+
+path:: The root path where the NDJSON files are stored.
+This path can be absolute or relative to the scanner home directory.
+
+extension:: The extension of the files containing datasets.
+The default value is "visualization.ndjson".
+
+custom_properties:: Declaration of the visualization custom properties.
+See <<Custom Properties>> for more information.
+
+field_custom_properties:: Declaration of the field custom properties.
+See <<Custom Properties>> for more information.
+This is the same as for the visualization, but it applies to the fields.
+
+filter:: Boolean expression in order to select the visualizations to inventory.
+The expression is the same as with the usual Zeenea filters.
+
+[NOTE]
+.Filter keys
+====
+id:: The id field of the JSON object.
+name:: The name field of the JSON object.
+path:: The path of the file containing the object relative to the root path configured.
+custom property name:: Any custom property defined in, _custom_properties_.
+====
+
+
+.Configuration file example
+----
+code = "example_visualization"      <1>
+name = "Example Visualization"      <2>
+connector_id = "example-visualization"
+enabled = true
+path = "../data"                    <3>
+extension = "visualization.jsonl"   <4>
+custom_properties = "string type"   <5>
+----
+
+<1> Name of the connection.
+<2> Code of the connection.
+<3> Path to the root folder where the files are stored.
+<4> Changes the extension to use the JSON-lines "jsonl" one.
+<5> Dataset custom properties.
+
+== Example Lineage Connector
+
+This is an example of a lineage connector.
+
+Connector id:: example-lineage
+Connector class:: zeenea.connector.example.lineage.ExampleLineageConnector
+Connection class:: zeenea.connector.example.lineage.ExampleLineageConnection
+
+=== Configuration
+
+The parameters of the connector are:
+
+path:: The root path where the NDJSON files are stored.
+This path can be absolute or relative to the scanner home directory.
+
+extension:: The extension of the files containing datasets.
+The default value is "lineage.ndjson".
+
+custom_properties:: Declaration of the data proces custom properties.
+See <<Custom Properties>> for more information.
+
+filter:: Boolean expression in order to select the data process to inventory.
+The expression is the same as with the usual Zeenea filters.
+
+[NOTE]
+.Filter keys
+====
+id:: The id field of the JSON object.
+name:: The name field of the JSON object.
+path:: The path of the file containing the object relative to the root path configured.
+custom property name:: Any custom property defined in, _custom_properties_.
+====
+
+.Configuration file example
+----
+code = "example_lineage"
+name = "Example Lineage"
+connector_id = "example-lineage"
+enabled = true
+path = "../data"                    <1>
+custom_properties = """             <2>
+    string type
+    instant last_execution from 'lastRun'
+"""
+filter = """
+    type = 'procedure'              <3>
+"""
+----
+
+<1> Name of the connection.
+<2> Code of the connection.
+<3> Filter on the type of the process.

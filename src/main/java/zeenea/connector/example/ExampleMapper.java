@@ -135,7 +135,7 @@ public class ExampleMapper {
 
       list.add(
           Field.builder()
-              .identifier(fieldId(field.getName()))
+              .id(fieldId(field.getName()))
               .name(field.getName())
               .description(field.getDescription())
               .nativeIndex(fieldIdx++)
@@ -275,9 +275,9 @@ public class ExampleMapper {
             Fix.build(
                 ForeignKey.builder()
                     .name(fk.getName())
-                    .targetDataset(fk.getTargetDataset())
-                    .targetFields(fk.getTargetFields())
-                    .sourceFields(fk.getSourceFields())));
+                    .targetDatasetIdentifier(parseItemId(fk.getTargetDataset()))
+                    .targetFieldIdentifiers(list(fk.getTargetFields(), this::fieldId))
+                    .sourceFieldIdentifiers(list(fk.getSourceFields(), this::fieldId))));
   }
 
   private <E, R> List<R> list(List<E> list, Function<? super E, ? extends R> elementMapper) {

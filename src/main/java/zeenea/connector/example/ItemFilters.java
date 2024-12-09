@@ -82,34 +82,10 @@ public class ItemFilters {
     }
   }
 
-  /**
-   * Because custom properties can have code which are invalid as a filter key, this method tranform
-   * them in a valid key.
-   *
-   * <p>Transformation list:
-   *
-   * <ol>
-   *   <li>Any invalid character is replaced by an underscore.
-   *   <li>If the first character is a digit, an undescore is added at the begin of the key.
-   * </ol>
-   *
-   * @param code Custom property code.
-   * @return A valid filter key.
-   */
-  private static String filterKeyName(String code) {
-    if (code.isEmpty()) return "_";
-    var matcher = INVALID_PROPERTY_CHAR.matcher(code);
-    var filterKey = matcher.replaceAll("_");
-    if (Character.isDigit(filterKey.charAt(0))) {
-      filterKey = "_" + filterKey;
-    }
-    return filterKey;
-  }
-
   private static void addCustomPropertiesValues(
       JsonItem item, CustomProperties customProperties, ArrayList<FilterKeyValue> kvList) {
     for (CustomProperty property : customProperties.getProperties()) {
-      String propertyCode = property.getCode();
+      String propertyCode = filterKeyName(property.getCode());
       var value = item.getCustomProperty(property.getAttributeName());
       if (value != null && !value.isNull() && !value.isMissingNode()) {
         switch (property.getType()) {
@@ -117,11 +93,7 @@ public class ItemFilters {
           case NUMBER:
           case INSTANT:
           case LONG_TEXT:
-            try {
-              kvList.add(FilterKeyValue.text(FilterKey.text(propertyCode), value.asText()));
-            } catch (IllegalArgumentException e) {
-              // TODO log at warn level
-            }
+            kvList.add(FilterKeyValue.text(FilterKey.text(propertyCode), value.asText()));
             break;
 
           case TAG:
@@ -157,5 +129,29 @@ public class ItemFilters {
         }
       }
     }
+  }
+
+  /**
+   * Because custom properties can have code which are invalid as a filter key, this method tranform
+   * them in a valid key.
+   *
+   * <p>Transformation list:
+   *
+   * <ol>
+   *   <li>Any invalid character is replaced by an underscore.
+   *   <li>If the first character is a digit, an undescore is added at the begin of the key.
+   * </ol>
+   *
+   * @param code Custom property code.
+   * @return A valid filter key.
+   */
+  private static String filterKeyName(String code) {
+    if (code.isEmpty()) return "_";
+    var matcher = INVALID_PROPERTY_CHAR.matcher(code);
+    var filterKey = matcher.replaceAll("_");
+    if (Character.isDigit(filterKey.charAt(0))) {
+      filterKey = "_" + filterKey;
+    }
+    return filterKey;
   }
 }

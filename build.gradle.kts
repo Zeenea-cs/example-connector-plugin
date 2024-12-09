@@ -13,35 +13,54 @@ repositories {
 }
 
 dependencies {
+    /*
+     * Includes the public-connector-sdk as a jar file in the lib folder.
+     * Currently, the maven repository containing the jar is private.
+     * So the dependency can be added as a file in the project.
+     * You will find the jar in the public-connector-sdk-version.jar in the folder lib of the scanner.
+     */
     val jarFiles = fileTree("lib") { include("*.jar") }
     compileOnly(jarFiles)
     testImplementation(jarFiles)
+
+    /*
+     * Include the PF4J library that manage the plugins.
+     * It should not be included in the release by used by the annotation processing.
+     */
     compileOnly(libs.pf4j)
     testImplementation(libs.pf4j)
     annotationProcessor(libs.pf4j)
+
+    /*
+     * Jackson library for JSON parsing.
+     */
     implementation(platform(libs.jackson.bom))
     implementation(libs.jackson.core)
     implementation(libs.jackson.databind)
     implementation(libs.jackson.datatype.jdk8)
     implementation(libs.jackson.datatype.jsr310)
+
+    /*
+     * Extra code need for the implementation of the example.
+     */
     implementation(project(":log"))
     implementation(project(":filter"))
     implementation(project(":custom-property"))
 
     /*
-     * Logs
-     */
-    testRuntimeOnly(libs.jcl.over.slf4j)
-    testRuntimeOnly(libs.logback.classic)
-
-    /*
-     * Tests
+     * Tests dependencies.
      */
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.params)
     testRuntimeOnly(libs.junit.engine)
     testImplementation(libs.assertj)
+
+    /*
+     * Test logs dependencies.
+     */
+    testRuntimeOnly(libs.jcl.over.slf4j)
+    testRuntimeOnly(libs.logback.classic)
 }
 
 java {
@@ -81,8 +100,8 @@ tasks.jar {
 }
 
 /*
- * Define the plugin layout.
- */
+* Define the plugin layout.
+*/
 distributions {
     main {
         contents {

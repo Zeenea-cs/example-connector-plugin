@@ -167,7 +167,7 @@ dependencies {
 
 <1> Includes the public-connector-sdk as a jar file in the _lib_ folder.
 Currently, the maven repository containing the jar is private.
-So the dependecy can be added as a file in the project.
+So the dependency can be added as a file in the project.
 You will find the jar in the public-connector-sdk-_version_.jar in the folder lib of the scanner.
 <2> The public-connector-sdk library is added in compile-only scope.
 <3> The public-connector-sdk library is added in test scope.
@@ -177,7 +177,7 @@ You will find the jar in the public-connector-sdk-_version_.jar in the folder li
 This is required to create the _META-INF/extensions.idx_ index.
 <7> Other dependency are declared as usually.
 
-Because the SL4J libraries can come from any dependeny or recursive dependency, we exclude them from the distribution when packaging:
+Because the SL4J libraries can come from any dependency or recursive dependency, we exclude them from the distribution when packaging:
 
 .Exclude SLF4J libraries
 ----

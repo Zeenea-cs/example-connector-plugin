@@ -29,8 +29,11 @@ public class FileRepository {
     var fileFilter = ItemFilters.fileFilter(config.filter());
 
     return findZeeneaFiles(ctx).stream()
+        // Prefilter files, in case a whole file can be rejected before being read.
         .filter(f -> fileFilter.matches(ItemFilters.fileItem(f)))
+        // Read the file and extract the items it contains.
         .flatMap(f -> Json.readItems(ctx, f, klass).stream())
+        // Filter the items.
         .filter(v -> config.filter().matches(ItemFilters.item(v, config.customProperties())));
   }
 

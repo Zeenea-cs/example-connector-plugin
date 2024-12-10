@@ -13,9 +13,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import zeenea.connector.common.ConnectionReference;
-import zeenea.connector.common.ConnectionReferenceAlias;
-import zeenea.connector.common.ConnectionReferenceCode;
+import zeenea.connector.common.DataSourceIdentifier;
 import zeenea.connector.common.IdentificationProperty;
 import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemReference;
@@ -285,20 +283,17 @@ public class ExampleMapper {
   }
 
   private ItemReference itemReference(JsonItemRef itemRef) {
-    ConnectionReference connectionRef;
-    if (itemRef.getConnectionCode() != null) {
-      if ("current_connection".equals(itemRef.getConnectionCode())) {
-        connectionRef = ConnectionReferenceCode.of(currentConnectionCode);
-      } else {
-        connectionRef = ConnectionReferenceCode.of(itemRef.getConnectionCode());
-      }
-    } else if (itemRef.getConnectionAlias() != null) {
-      connectionRef = ConnectionReferenceAlias.of(itemRef.getConnectionAlias());
+    DataSourceIdentifier dsId;
+    String connection = itemRef.getConnection();
+    if ("current_connection".equals(connection)) {
+      dsId = DataSourceIdentifier.of(IdentificationProperty.of("alias", currentConnectionCode));
+    } else if (connection != null) {
+      dsId = DataSourceIdentifier.of(IdentificationProperty.of("alias", connection));
     } else {
-      connectionRef = null;
+      dsId = null;
     }
     var id = parseItemId(itemRef.getId());
-    return ItemReference.of(id, connectionRef);
+    return ItemReference.of(id, dsId);
   }
 
   private Contact contact(JsonContact contact) {

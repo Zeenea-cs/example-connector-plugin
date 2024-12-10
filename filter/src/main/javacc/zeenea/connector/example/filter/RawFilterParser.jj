@@ -167,9 +167,9 @@ Filter atomicFilter():
   | <NEVER>  { filter = Filter.never(); }
 
   | <ALL> elementKey = <KEY> <IN> key = <KEY> { checkKeyIsValid(key, FilterKind.LIST); declareLocalKey(elementKey); }
-        <MATCHES> elementFilter = atomicFilter() { filter = Filter.all(key.key, elementKey.key, elementFilter); }
+        <MATCH> elementFilter = atomicFilter() { filter = Filter.all(key.key, elementKey.key, elementFilter); }
   | <ANY> elementKey = <KEY> <IN> key = <KEY> { checkKeyIsValid(key, FilterKind.LIST); declareLocalKey(elementKey); }
-        <MATCHES> elementFilter = atomicFilter() { filter = Filter.any(key.key, elementKey.key, elementFilter); }
+        <MATCH> elementFilter = atomicFilter() { filter = Filter.any(key.key, elementKey.key, elementFilter); }
 
   | LOOKAHEAD(2) filter = equalFilter()
   | key = <KEY> { checkKeyIsValid(key, FilterKind.TEXT); } (

@@ -2,8 +2,7 @@ package zeenea.connector.example.json;
 
 public final class JsonItemRef {
   private String id;
-  private String connectionCode;
-  private String connectionAlias;
+  private String connection;
 
   public String getId() {
     return id;
@@ -13,19 +12,11 @@ public final class JsonItemRef {
     this.id = id;
   }
 
-  public String getConnectionCode() {
-    return connectionCode;
+  public String getConnection() {
+    return connection;
   }
 
-  public void setConnectionCode(String connectionCode) {
-    this.connectionCode = connectionCode;
-  }
-
-  public String getConnectionAlias() {
-    return connectionAlias;
-  }
-
-  public void setConnectionAlias(String connectionAlias) {
-    this.connectionAlias = connectionAlias;
+  public void setConnection(String connection) {
+    this.connection = connection;
   }
 }

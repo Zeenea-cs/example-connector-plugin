@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import zeenea.connector.ConnectionConfiguration;
+import zeenea.connector.common.DataSourceIdentifier;
 import zeenea.connector.common.IdentificationProperty;
 import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemReference;
@@ -70,20 +71,26 @@ class ExampleLineageConnectionTest {
                           .itemIdentifier(
                               IdentificationProperty.of("schema", "music"),
                               IdentificationProperty.of("table", "albums"))
-                          .connectionAlias("example_dataset")
+                          .dataSourceIdentifier(
+                              DataSourceIdentifier.of(
+                                  IdentificationProperty.of("alias", "example_dataset")))
                           .build(),
                       ItemReference.builder()
                           .itemIdentifier(
                               IdentificationProperty.of("schema", "music"),
                               IdentificationProperty.of("table", "artists"))
-                          .connectionAlias("example_dataset")
+                          .dataSourceIdentifier(
+                              DataSourceIdentifier.of(
+                                  IdentificationProperty.of("alias", "example_dataset")))
                           .build())
                   .targets(
                       ItemReference.builder()
                           .itemIdentifier(
                               IdentificationProperty.of("schema", "music"),
                               IdentificationProperty.of("table", "artist_album_count"))
-                          .connectionAlias("example_dataset")
+                          .dataSourceIdentifier(
+                              DataSourceIdentifier.of(
+                                  IdentificationProperty.of("alias", "example_dataset")))
                           .build())
                   .build());
     }

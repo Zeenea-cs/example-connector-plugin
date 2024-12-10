@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import zeenea.connector.ConnectionConfiguration;
+import zeenea.connector.common.DataSourceIdentifier;
 import zeenea.connector.common.IdentificationProperty;
 import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemInventory;
@@ -97,7 +98,7 @@ class ExampleVisualizationConnectionTest {
                   .fields(
                       List.of(
                           Field.builder()
-                              .identifier(
+                              .id(
                                   ItemIdentifier.of(
                                       IdentificationProperty.of("field", "artist_name")))
                               .name("artist_name")
@@ -108,7 +109,7 @@ class ExampleVisualizationConnectionTest {
                               .multivalued(false)
                               .build(),
                           Field.builder()
-                              .identifier(
+                              .id(
                                   ItemIdentifier.of(
                                       IdentificationProperty.of("field", "albums_count")))
                               .name("albums_count")
@@ -123,7 +124,9 @@ class ExampleVisualizationConnectionTest {
                           .itemIdentifier(
                               IdentificationProperty.of("schema", "music"),
                               IdentificationProperty.of("table", "artist_album_count"))
-                          .connectionAlias("example_dataset")
+                          .dataSourceIdentifier(
+                              DataSourceIdentifier.of(
+                                  IdentificationProperty.of("alias", "example_dataset")))
                           .build())
                   .build());
     }

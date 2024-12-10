@@ -16,10 +16,12 @@ import zeenea.connector.example.filter.Filter.MatchesRegex;
 
 public class FilterParserTest {
 
-  private static FilterKey projectKey = FilterKey.text("project");
-  private static FilterKey tableKey = FilterKey.text("table");
+  private static final FilterKey projectKey = FilterKey.text("project");
+  private static final FilterKey tableKey = FilterKey.text("table");
+  private static final FilterKey tagsKey = FilterKey.list("tags");
+  private static final FilterKey tagKey = FilterKey.text("tag");
 
-  private static FilterParser parser = FilterParser.of(Set.of(projectKey, tableKey));
+  private static final FilterParser parser = FilterParser.of(Set.of(projectKey, tableKey, tagsKey));
 
   @Test
   @DisplayName("parse should parse always filter")
@@ -280,6 +282,73 @@ public class FilterParserTest {
   }
 
   @Test
+  @DisplayName("parse should parse 'any' filter with single expression")
+  void parseShouldParseAnyFilterWithSingleExpression() {
+    var actual = parser.parse("any tag in tags match tag = 'valid'");
+    assertEquals(Filter.any(tagsKey, tagKey, Filter.isEqualTo(tagKey, "valid")), actual);
+  }
+
+  @Test
+  @DisplayName("parse should parse 'any' filter with single expression in 'and' close")
+  void parseShouldParseAnyFilterWithSingleExpressionInAndClose() {
+    var actual = parser.parse("any tag in tags match tag = 'valid' and project = 'zeenea'");
+    assertEquals(
+        Filter.and(
+            Filter.any(tagsKey, tagKey, Filter.isEqualTo(tagKey, "valid")),
+            Filter.isEqualTo(projectKey, "zeenea")),
+        actual);
+  }
+
+  @Test
+  @DisplayName("parse should parse 'any' filter with complex expression")
+  void parseShouldParseAnyFilterWithComplexExpression() {
+    var actual = parser.parse("any tag in tags match (tag = 'valid' and project = 'zeenea')");
+    assertEquals(
+        Filter.any(
+            tagsKey,
+            tagKey,
+            Filter.and(Filter.isEqualTo(tagKey, "valid"), Filter.isEqualTo(projectKey, "zeenea"))),
+        actual);
+  }
+
+  @Test
+  @DisplayName("parse should parse 'all' filter with single expression")
+  void parseShouldParseAllFilterWithSingleExpression() {
+    var actual = parser.parse("all tag in tags match tag = 'valid'");
+    assertEquals(Filter.all(tagsKey, tagKey, Filter.isEqualTo(tagKey, "valid")), actual);
+  }
+
+  @Test
+  @DisplayName("parse should parse 'all' filter with single expression in 'and' close")
+  void parseShouldParseAllFilterWithSingleExpressionInAndClose() {
+    var actual = parser.parse("all tag in tags match tag = 'valid' and project = 'zeenea'");
+    assertEquals(
+        Filter.and(
+            Filter.all(tagsKey, tagKey, Filter.isEqualTo(tagKey, "valid")),
+            Filter.isEqualTo(projectKey, "zeenea")),
+        actual);
+  }
+
+  @Test
+  @DisplayName("parse should parse 'all' filter with complex expression")
+  void parseShouldParseAllFilterWithComplexExpression() {
+    var actual = parser.parse("all tag in tags match (tag = 'valid' and project = 'zeenea')");
+    assertEquals(
+        Filter.all(
+            tagsKey,
+            tagKey,
+            Filter.and(Filter.isEqualTo(tagKey, "valid"), Filter.isEqualTo(projectKey, "zeenea"))),
+        actual);
+  }
+
+  @Test
+  @DisplayName("parse should simply 'all' filter when expression isn't related to the item key")
+  void parseShouldSimplifyAllFilterWhenExpressionNotRelatedToItemKey() {
+    var actual = parser.parse("all tag in tags match project = 'zeenea'");
+    assertEquals(Filter.isEqualTo(projectKey, "zeenea"), actual);
+  }
+
+  @Test
   @DisplayName("Filter.toString should be compatible with parser")
   void filterToStringShouldBeCompatible() {
     var text =
@@ -294,7 +363,7 @@ public class FilterParserTest {
     var actual =
         assertThrows(FilterParsingException.class, () -> parser.parse("invalid_key = 'zeenea'"));
     assertEquals(
-        "Invalid key (not found) \"invalid_key\" at line 1, column 1. Expected values {project, table}",
+        "Invalid key (not found) \"invalid_key\" at line 1, column 1. Expected values {project, table, tags}",
         actual.getMessage());
   }
 

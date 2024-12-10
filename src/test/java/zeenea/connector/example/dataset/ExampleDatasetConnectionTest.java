@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import zeenea.connector.ConnectionConfiguration;
+import zeenea.connector.common.DataSourceIdentifier;
 import zeenea.connector.common.IdentificationProperty;
 import zeenea.connector.common.ItemIdentifier;
 import zeenea.connector.common.ItemInventory;
@@ -110,8 +111,7 @@ class ExampleDatasetConnectionTest {
                   .fields(
                       List.of(
                           Field.builder()
-                              .identifier(
-                                  ItemIdentifier.of(IdentificationProperty.of("field", "album_id")))
+                              .id(ItemIdentifier.of(IdentificationProperty.of("field", "album_id")))
                               .name("album_id")
                               .description("Album identifier")
                               .nativeIndex(0)
@@ -121,8 +121,7 @@ class ExampleDatasetConnectionTest {
                               .multivalued(false)
                               .build(),
                           Field.builder()
-                              .identifier(
-                                  ItemIdentifier.of(IdentificationProperty.of("field", "title")))
+                              .id(ItemIdentifier.of(IdentificationProperty.of("field", "title")))
                               .name("title")
                               .description("Album Title")
                               .nativeIndex(1)
@@ -132,7 +131,7 @@ class ExampleDatasetConnectionTest {
                               .multivalued(false)
                               .build(),
                           Field.builder()
-                              .identifier(
+                              .id(
                                   ItemIdentifier.of(
                                       IdentificationProperty.of("field", "artist_id")))
                               .name("artist_id")
@@ -150,14 +149,22 @@ class ExampleDatasetConnectionTest {
                           .name("Jean Michel Jarre")
                           .phoneNumber("+1-212-555-7532")
                           .build())
-                  .primaryKeys("album_id")
+                  .primaryKeyIdentifiers(
+                      ItemIdentifier.of(IdentificationProperty.of("field", "album_id")))
                   .foreignKeys(
                       Fix.build(
                           ForeignKey.builder()
                               .name("fk_albums_artists")
-                              .targetDataset("/schema=music/table=artists")
-                              .targetFields("artist_id")
-                              .sourceFields("artist_id")))
+                              .targetDatasetIdentifier(
+                                  ItemIdentifier.of(
+                                      IdentificationProperty.of("schema", "music"),
+                                      IdentificationProperty.of("table", "artists")))
+                              .targetFieldIdentifiers(
+                                  ItemIdentifier.of(
+                                      IdentificationProperty.of("field", "artist_id")))
+                              .sourceFieldIdentifiers(
+                                  ItemIdentifier.of(
+                                      IdentificationProperty.of("field", "artist_id")))))
                   .build(),
               Dataset.builder()
                   .id(
@@ -174,7 +181,7 @@ class ExampleDatasetConnectionTest {
                   .fields(
                       List.of(
                           Field.builder()
-                              .identifier(
+                              .id(
                                   ItemIdentifier.of(
                                       IdentificationProperty.of("field", "artist_name")))
                               .name("artist_name")
@@ -185,7 +192,7 @@ class ExampleDatasetConnectionTest {
                               .multivalued(false)
                               .build(),
                           Field.builder()
-                              .identifier(
+                              .id(
                                   ItemIdentifier.of(
                                       IdentificationProperty.of("field", "albums_count")))
                               .name("albums_count")
@@ -200,13 +207,17 @@ class ExampleDatasetConnectionTest {
                           .itemIdentifier(
                               IdentificationProperty.of("schema", "music"),
                               IdentificationProperty.of("table", "albums"))
-                          .connectionCode("test_dataset")
+                          .dataSourceIdentifier(
+                              DataSourceIdentifier.of(
+                                  IdentificationProperty.of("alias", "test_dataset")))
                           .build(),
                       ItemReference.builder()
                           .itemIdentifier(
                               IdentificationProperty.of("schema", "music"),
                               IdentificationProperty.of("table", "artists"))
-                          .connectionCode("test_dataset")
+                          .dataSourceIdentifier(
+                              DataSourceIdentifier.of(
+                                  IdentificationProperty.of("alias", "test_dataset")))
                           .build())
                   .build());
     }

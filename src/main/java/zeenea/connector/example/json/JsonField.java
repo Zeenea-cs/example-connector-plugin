@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class JsonField implements Customizable {
@@ -13,6 +14,8 @@ public class JsonField implements Customizable {
   private String dataType;
   private boolean isNullable = false;
   private boolean isMultivalued = false;
+  private List<JsonItemRef> sourceFields = List.of();
+
   private final Map<String, JsonNode> customProperty = new HashMap<>();
 
   public String getName() {
@@ -61,6 +64,14 @@ public class JsonField implements Customizable {
 
   public void setMultivalued(boolean multivalued) {
     isMultivalued = multivalued;
+  }
+
+  public List<JsonItemRef> getSourceFields() {
+    return sourceFields;
+  }
+
+  public void setSourceFields(List<JsonItemRef> sourceFields) {
+    this.sourceFields = sourceFields;
   }
 
   @JsonAnyGetter

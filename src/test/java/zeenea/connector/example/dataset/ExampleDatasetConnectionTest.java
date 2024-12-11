@@ -187,6 +187,14 @@ class ExampleDatasetConnectionTest {
                               .dataType(DataType.String)
                               .nullable(true)
                               .multivalued(false)
+                              .sourceFields(
+                                  ItemReference.of(
+                                      ItemIdentifier.of(
+                                          IdentificationProperty.of("schema", "music"),
+                                          IdentificationProperty.of("table", "artists"),
+                                          IdentificationProperty.of("field", "name")),
+                                      DataSourceIdentifier.of(
+                                          IdentificationProperty.of("alias", "test_dataset"))))
                               .build(),
                           Field.builder()
                               .id(

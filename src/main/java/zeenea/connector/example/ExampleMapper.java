@@ -27,11 +27,13 @@ import zeenea.connector.example.json.JsonField;
 import zeenea.connector.example.json.JsonForeignKey;
 import zeenea.connector.example.json.JsonItem;
 import zeenea.connector.example.json.JsonItemRef;
+import zeenea.connector.example.json.JsonOperation;
 import zeenea.connector.example.log.SimpleLogger;
 import zeenea.connector.example.log.TracingContext;
 import zeenea.connector.example.property.CustomProperties;
 import zeenea.connector.example.property.CustomProperty;
 import zeenea.connector.field.Field;
+import zeenea.connector.process.Operation;
 import zeenea.connector.property.InstantPropertyDefinition;
 import zeenea.connector.property.NumberPropertyDefinition;
 import zeenea.connector.property.PropertiesBuilder;
@@ -94,12 +96,36 @@ public class ExampleMapper {
     }
   }
 
+  public List<ItemIdentifier> fieldIds(List<String> fields) {
+    return list(fields, this::fieldId);
+  }
+
   public ItemIdentifier fieldId(String name) {
     return ItemIdentifier.of(IdentificationProperty.of(FIELD_KEY, name));
   }
 
   public List<Contact> contacts(JsonItem item) {
     return list(item.getContacts(), this::contact);
+  }
+
+  private Contact contact(JsonContact contact) {
+    return Contact.builder()
+        .role(contact.getRole())
+        .email(contact.getEmail())
+        .name(contact.getName())
+        .phoneNumber(contact.getPhone())
+        .build();
+  }
+
+  public List<Operation> operations(List<JsonOperation> operations) {
+    return list(operations, this::operation);
+  }
+
+  private Operation operation(JsonOperation operation) {
+    return Operation.builder()
+        .sources(itemReferences(operation.getSources()))
+        .targets(itemReferences(operation.getTargets()))
+        .build();
   }
 
   public List<ItemReference> itemReferences(List<JsonItemRef> refList) {
@@ -142,6 +168,7 @@ public class ExampleMapper {
               .nullable(field.isNullable())
               .multivalued(field.isMultivalued())
               .properties(properties)
+              .sourceFields(itemReferences(field.getSourceFields()))
               .build());
     }
     return list;
@@ -293,15 +320,6 @@ public class ExampleMapper {
     }
     var id = parseItemId(itemRef.getId());
     return ItemReference.of(id, dsId);
-  }
-
-  private Contact contact(JsonContact contact) {
-    return Contact.builder()
-        .role(contact.getRole())
-        .email(contact.getEmail())
-        .name(contact.getName())
-        .phoneNumber(contact.getPhone())
-        .build();
   }
 
   private DataType dataType(String type) {

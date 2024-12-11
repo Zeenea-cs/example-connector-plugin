@@ -107,6 +107,14 @@ class ExampleVisualizationConnectionTest {
                               .dataType(DataType.String)
                               .nullable(true)
                               .multivalued(false)
+                              .sourceFields(
+                                  ItemReference.of(
+                                      ItemIdentifier.of(
+                                          IdentificationProperty.of("schema", "music"),
+                                          IdentificationProperty.of("table", "artist_album_count"),
+                                          IdentificationProperty.of("field", "artist_name")),
+                                      DataSourceIdentifier.of(
+                                          IdentificationProperty.of("alias", "example_dataset"))))
                               .build(),
                           Field.builder()
                               .id(
@@ -118,6 +126,14 @@ class ExampleVisualizationConnectionTest {
                               .dataType(DataType.Long)
                               .nullable(true)
                               .multivalued(false)
+                              .sourceFields(
+                                  ItemReference.of(
+                                      ItemIdentifier.of(
+                                          IdentificationProperty.of("schema", "music"),
+                                          IdentificationProperty.of("table", "artist_album_count"),
+                                          IdentificationProperty.of("field", "albums_count")),
+                                      DataSourceIdentifier.of(
+                                          IdentificationProperty.of("alias", "example_dataset"))))
                               .build()))
                   .sourceDatasets(
                       ItemReference.builder()

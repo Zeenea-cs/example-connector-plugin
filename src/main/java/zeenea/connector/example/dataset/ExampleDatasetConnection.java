@@ -145,8 +145,7 @@ public class ExampleDatasetConnection implements InventoryConnection {
             .contacts(mapper.contacts(item))
             .sourceDatasets(mapper.itemReferences(item.getSources()))
             .fields(mapper.fields(ctx, item.getFields(), config.fieldProperties()))
-            .primaryKeyIdentifiers(
-                item.getPrimaryKey().stream().map(mapper::fieldId).collect(Collectors.toList()))
+            .primaryKeyIdentifiers(mapper.fieldIds(item.getPrimaryKey()))
             .foreignKeys(mapper.foreignKeys(item.getForeignKeys()))
             .build();
 

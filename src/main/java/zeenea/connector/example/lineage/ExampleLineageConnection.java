@@ -84,6 +84,7 @@ public class ExampleLineageConnection implements SynchronizeConnection {
                   .contacts(mapper.contacts(process))
                   .sources(mapper.itemReferences(process.getSources()))
                   .targets(mapper.itemReferences(process.getTargets()))
+                  .operations(mapper.operations(process.getOperations()))
                   .build();
             });
   }

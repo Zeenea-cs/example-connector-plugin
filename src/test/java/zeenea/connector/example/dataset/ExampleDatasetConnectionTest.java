@@ -15,7 +15,6 @@ import zeenea.connector.contact.Contact;
 import zeenea.connector.dataset.DataType;
 import zeenea.connector.dataset.Dataset;
 import zeenea.connector.dataset.ForeignKey;
-import zeenea.connector.example.Fix;
 import zeenea.connector.example.Metadata;
 import zeenea.connector.example.TestConfiguration;
 import zeenea.connector.example.TestPath;
@@ -152,19 +151,17 @@ class ExampleDatasetConnectionTest {
                   .primaryKeyIdentifiers(
                       ItemIdentifier.of(IdentificationProperty.of("field", "album_id")))
                   .foreignKeys(
-                      Fix.build(
-                          ForeignKey.builder()
-                              .name("fk_albums_artists")
-                              .targetDatasetIdentifier(
-                                  ItemIdentifier.of(
-                                      IdentificationProperty.of("schema", "music"),
-                                      IdentificationProperty.of("table", "artists")))
-                              .targetFieldIdentifiers(
-                                  ItemIdentifier.of(
-                                      IdentificationProperty.of("field", "artist_id")))
-                              .sourceFieldIdentifiers(
-                                  ItemIdentifier.of(
-                                      IdentificationProperty.of("field", "artist_id")))))
+                      ForeignKey.builder()
+                          .name("fk_albums_artists")
+                          .targetDatasetIdentifier(
+                              ItemIdentifier.of(
+                                  IdentificationProperty.of("schema", "music"),
+                                  IdentificationProperty.of("table", "artists")))
+                          .targetFieldIdentifiers(
+                              ItemIdentifier.of(IdentificationProperty.of("field", "artist_id")))
+                          .sourceFieldIdentifiers(
+                              ItemIdentifier.of(IdentificationProperty.of("field", "artist_id")))
+                          .build())
                   .build(),
               Dataset.builder()
                   .id(

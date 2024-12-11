@@ -266,16 +266,15 @@ public class ExampleMapper {
   }
 
   public List<ForeignKey> foreignKeys(List<JsonForeignKey> foreignKeys) {
-    // Wait for a fix of zeenea.connector.dataset.ForeignKey.Builder#build visibility.
     return list(
         foreignKeys,
         fk ->
-            Fix.build(
-                ForeignKey.builder()
-                    .name(fk.getName())
-                    .targetDatasetIdentifier(parseItemId(fk.getTargetDataset()))
-                    .targetFieldIdentifiers(list(fk.getTargetFields(), this::fieldId))
-                    .sourceFieldIdentifiers(list(fk.getSourceFields(), this::fieldId))));
+            ForeignKey.builder()
+                .name(fk.getName())
+                .targetDatasetIdentifier(parseItemId(fk.getTargetDataset()))
+                .targetFieldIdentifiers(list(fk.getTargetFields(), this::fieldId))
+                .sourceFieldIdentifiers(list(fk.getSourceFields(), this::fieldId))
+                .build());
   }
 
   private <E, R> List<R> list(List<E> list, Function<? super E, ? extends R> elementMapper) {

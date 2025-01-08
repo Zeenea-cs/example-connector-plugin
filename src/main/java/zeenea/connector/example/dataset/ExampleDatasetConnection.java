@@ -82,6 +82,7 @@ public class ExampleDatasetConnection implements InventoryConnection {
     List<ItemInventory> inventory =
         fileRepository
             .loadFileItems(ctx, JsonDataset.class)
+            .filter(d -> d.getItem().getId() != null)
             .map(
                 d ->
                     ItemInventory.of(
@@ -148,11 +149,11 @@ public class ExampleDatasetConnection implements InventoryConnection {
             .name(item.getName())
             .description(item.getDescription())
             .properties(mapper.properties(ctx, fileItem, config.customProperties()))
-            .contacts(mapper.contacts(item))
-            .sourceDatasets(mapper.itemReferences(item.getSources()))
+            .contacts(mapper.contacts(ctx, item))
+            .sourceDatasets(mapper.itemReferences(ctx, item.getSources()))
             .fields(mapper.fields(ctx, item.getFields(), config.fieldProperties()))
-            .primaryKeyIdentifiers(mapper.fieldIds(item.getPrimaryKey()))
-            .foreignKeys(mapper.foreignKeys(item.getForeignKeys()))
+            .primaryKeyIdentifiers(mapper.fieldIds(ctx, item.getPrimaryKey()))
+            .foreignKeys(mapper.foreignKeys(ctx, item.getForeignKeys()))
             .build();
 
     return Stream.of(dataset);

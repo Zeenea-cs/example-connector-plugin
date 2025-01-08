@@ -87,10 +87,10 @@ public class ExampleLineageConnection implements SynchronizeConnection {
                   .name(process.getName())
                   .description(process.getDescription())
                   .properties(mapper.properties(ctx, fileItem, config.customProperties()))
-                  .contacts(mapper.contacts(process))
-                  .sources(mapper.itemReferences(process.getSources()))
-                  .targets(mapper.itemReferences(process.getTargets()))
-                  .operations(mapper.operations(process.getOperations()))
+                  .contacts(mapper.contacts(ctx, process))
+                  .sources(mapper.itemReferences(ctx, process.getSources()))
+                  .targets(mapper.itemReferences(ctx, process.getTargets()))
+                  .operations(mapper.operations(ctx, process.getOperations()))
                   .build();
             });
   }

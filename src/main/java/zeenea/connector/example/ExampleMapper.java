@@ -19,6 +19,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import zeenea.connector.common.DataSourceIdentifier;
 import zeenea.connector.common.IdentificationProperty;
 import zeenea.connector.common.ItemIdentifier;
@@ -102,16 +103,16 @@ public class ExampleMapper {
     }
   }
 
-  public List<ItemIdentifier> fieldIds(List<String> fields) {
-    return list(fields, this::fieldId);
+  public List<ItemIdentifier> fieldIds(TracingContext ctx, List<String> fields) {
+    return list(ctx, fields, this::fieldId);
   }
 
   public ItemIdentifier fieldId(String name) {
     return ItemIdentifier.of(IdentificationProperty.of(FIELD_KEY, name));
   }
 
-  public List<Contact> contacts(JsonItem item) {
-    return list(item.getContacts(), this::contact);
+  public List<Contact> contacts(TracingContext ctx, JsonItem item) {
+    return list(ctx, item.getContacts(), this::contact);
   }
 
   private Contact contact(JsonContact contact) {
@@ -123,19 +124,19 @@ public class ExampleMapper {
         .build();
   }
 
-  public List<Operation> operations(List<JsonOperation> operations) {
-    return list(operations, this::operation);
+  public List<Operation> operations(TracingContext ctx, List<JsonOperation> operations) {
+    return list(ctx, operations, e -> operation(ctx, e));
   }
 
-  private Operation operation(JsonOperation operation) {
+  private Operation operation(TracingContext ctx, JsonOperation operation) {
     return Operation.builder()
-        .sources(itemReferences(operation.getSources()))
-        .targets(itemReferences(operation.getTargets()))
+        .sources(itemReferences(ctx, operation.getSources()))
+        .targets(itemReferences(ctx, operation.getTargets()))
         .build();
   }
 
-  public List<ItemReference> itemReferences(List<JsonItemRef> refList) {
-    return list(refList, this::itemReference);
+  public List<ItemReference> itemReferences(TracingContext ctx, List<JsonItemRef> refList) {
+    return list(ctx, refList, this::itemReference);
   }
 
   public List<Field> fields(
@@ -174,7 +175,7 @@ public class ExampleMapper {
               .nullable(field.isNullable())
               .multivalued(field.isMultivalued())
               .properties(properties)
-              .sourceFields(itemReferences(field.getSourceFields()))
+              .sourceFields(itemReferences(ctx, field.getSourceFields()))
               .build());
     }
     return list;
@@ -228,6 +229,7 @@ public class ExampleMapper {
                     new BigDecimal(value.textValue()));
               } catch (NumberFormatException e) {
                 log.entry("example_mapper_invalid_number")
+                    .context(ctx)
                     .with("property_code", property.getCode())
                     .with("json_attribute_name", property.getAttributeName())
                     .with("value", value.textValue())
@@ -245,6 +247,7 @@ public class ExampleMapper {
                     ZonedDateTime.parse(value.textValue()).toInstant());
               } catch (DateTimeParseException e) {
                 log.entry("example_mapper_invalid_instant")
+                    .context(ctx)
                     .with("property_code", property.getCode())
                     .with("json_attribute_name", property.getAttributeName())
                     .with("value", value.textValue())
@@ -263,6 +266,7 @@ public class ExampleMapper {
                 uri = new URI(value.textValue());
               } catch (URISyntaxException e) {
                 log.entry("example_mapper_invalid_uri")
+                    .context(ctx)
                     .with("property_code", property.getCode())
                     .with("json_attribute_name", property.getAttributeName())
                     .with("value", value.textValue())
@@ -276,6 +280,7 @@ public class ExampleMapper {
                   uri = new URI(value.textValue());
                 } catch (URISyntaxException e) {
                   log.entry("example_mapper_invalid_uri")
+                      .context(ctx)
                       .with("property_code", property.getCode())
                       .with("json_attribute_name", property.getAttributeName())
                       .with("value", value.textValue())
@@ -298,20 +303,38 @@ public class ExampleMapper {
     return builder;
   }
 
-  public List<ForeignKey> foreignKeys(List<JsonForeignKey> foreignKeys) {
+  public List<ForeignKey> foreignKeys(TracingContext ctx, List<JsonForeignKey> foreignKeys) {
     return list(
+        ctx,
         foreignKeys,
         fk ->
             ForeignKey.builder()
                 .name(fk.getName())
                 .targetDatasetIdentifier(parseItemId(fk.getTargetDataset()))
-                .targetFieldIdentifiers(list(fk.getTargetFields(), this::fieldId))
-                .sourceFieldIdentifiers(list(fk.getSourceFields(), this::fieldId))
+                .targetFieldIdentifiers(list(ctx, fk.getTargetFields(), this::fieldId))
+                .sourceFieldIdentifiers(list(ctx, fk.getSourceFields(), this::fieldId))
                 .build());
   }
 
-  private <E, R> List<R> list(List<E> list, Function<? super E, ? extends R> elementMapper) {
-    return list.stream().map(elementMapper).collect(Collectors.toList());
+  private <E, R> List<R> list(
+      TracingContext ctx, List<E> list, Function<? super E, ? extends R> elementMapper) {
+    return list.stream()
+        .flatMap(
+            element -> {
+              try {
+                return Stream.ofNullable(elementMapper.apply(element));
+              } catch (RuntimeException e) {
+                log.entry("example_mapper_invalid_element")
+                    .context(ctx)
+                    .with(
+                        "element_type",
+                        element != null ? element.getClass().getSimpleName() : "null")
+                    .quiet()
+                    .warn(e);
+                return Stream.empty();
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   private ItemReference itemReference(JsonItemRef itemRef) {

@@ -144,8 +144,8 @@ public class ExampleVisualizationConnection implements InventoryConnection {
             .name(item.getName())
             .description(item.getDescription())
             .properties(mapper.properties(ctx, fileItem, config.customProperties()))
-            .contacts(mapper.contacts(item))
-            .sourceDatasets(mapper.itemReferences(item.getSources()))
+            .contacts(mapper.contacts(ctx, item))
+            .sourceDatasets(mapper.itemReferences(ctx, item.getSources()))
             .fields(mapper.fields(ctx, item.getFields(), config.fieldProperties()))
             .build();
 

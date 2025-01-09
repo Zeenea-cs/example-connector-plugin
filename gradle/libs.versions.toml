@@ -1,5 +1,4 @@
 [versions]
-zeenea-public-connector-sdk = "2.0.0-RC2"
 pf4j = "3.11.0"
 jackson = "2.18.1"
 jetbrains-annotations = "26.0.1"
@@ -9,7 +8,6 @@ junit = "5.11.3"
 assertj = "3.26.3"
 
 [libraries]
-zeenea-public-connector-sdk = { module = "zeenea:public-connector-sdk", version.ref = "zeenea-public-connector-sdk" }
 pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
 jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }

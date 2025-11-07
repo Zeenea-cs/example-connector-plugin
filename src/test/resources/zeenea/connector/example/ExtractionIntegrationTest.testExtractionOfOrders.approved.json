@@ -1,0 +1,135 @@
+{
+  "id" : {
+    "identificationProperties" : [ {
+      "key" : "databaseId",
+      "value" : "d63ce9ef-4d8d-4d28-a84f-292849fc3173"
+    }, {
+      "key" : "id",
+      "value" : "446635fd-6773-4862-ad33-f7c99963f6d7"
+    } ]
+  },
+  "name" : "Orders",
+  "description" : null,
+  "properties" : {
+    "Database" : {
+      "value" : "CustomerDB"
+    },
+    "instant" : {
+      "value" : 897681.600000000
+    },
+    "longText" : {
+      "value" : "This is a long text property value example."
+    },
+    "number" : {
+      "value" : 42
+    },
+    "string" : {
+      "value" : "This is a string property value example."
+    },
+    "tag" : {
+      "value" : [ "tag1", "tag2", "tag3" ]
+    },
+    "url" : {
+      "value" : "https://www.example.com/path/to/item",
+      "label" : null
+    }
+  },
+  "contacts" : [ {
+    "email" : "example.of@email.com",
+    "name" : "name",
+    "phoneNumber" : "phoneNumber",
+    "role" : "role"
+  } ],
+  "glossaryRefs" : [ ],
+  "customItemRefs" : [ ],
+  "fields" : [ {
+    "id" : {
+      "identificationProperties" : [ {
+        "key" : "fieldName",
+        "value" : "OrderID"
+      } ]
+    },
+    "name" : "OrderID",
+    "dataType" : "Integer",
+    "nativeType" : "INTEGER",
+    "nativeIndex" : 0,
+    "nullable" : false,
+    "multivalued" : false,
+    "description" : null,
+    "properties" : { },
+    "glossaryRefs" : [ ],
+    "customItemRefs" : [ ],
+    "sourceField" : [ ]
+  }, {
+    "id" : {
+      "identificationProperties" : [ {
+        "key" : "fieldName",
+        "value" : "OrderDate"
+      } ]
+    },
+    "name" : "OrderDate",
+    "dataType" : "Timestamp",
+    "nativeType" : "DATE",
+    "nativeIndex" : 1,
+    "nullable" : false,
+    "multivalued" : false,
+    "description" : null,
+    "properties" : { },
+    "glossaryRefs" : [ ],
+    "customItemRefs" : [ ],
+    "sourceField" : [ ]
+  }, {
+    "id" : {
+      "identificationProperties" : [ {
+        "key" : "fieldName",
+        "value" : "CustomerIDReference"
+      } ]
+    },
+    "name" : "CustomerIDReference",
+    "dataType" : "Unknown",
+    "nativeType" : "REFERENCE",
+    "nativeIndex" : 2,
+    "nullable" : false,
+    "multivalued" : false,
+    "description" : null,
+    "properties" : { },
+    "glossaryRefs" : [ ],
+    "customItemRefs" : [ ],
+    "sourceField" : [ ]
+  } ],
+  "primaryKeys" : [ ],
+  "primaryKeyIdentifiers" : [ {
+    "identificationProperties" : [ {
+      "key" : "fieldName",
+      "value" : "OrderID"
+    } ]
+  } ],
+  "foreignKeys" : [ {
+    "targetDataset" : null,
+    "targetDatasetIdentifier" : {
+      "identificationProperties" : [ {
+        "key" : "databaseId",
+        "value" : "d63ce9ef-4d8d-4d28-a84f-292849fc3173"
+      }, {
+        "key" : "id",
+        "value" : "b52d59ad-19ab-434c-a0e3-914bf7f99f49"
+      } ]
+    },
+    "sourceFields" : [ ],
+    "sourceFieldIdentifiers" : [ {
+      "identificationProperties" : [ {
+        "key" : "fieldName",
+        "value" : "CustomerIDReference"
+      } ]
+    } ],
+    "targetFields" : [ ],
+    "targetFieldIdentifiers" : [ {
+      "identificationProperties" : [ {
+        "key" : "fieldName",
+        "value" : "CustomerID"
+      } ]
+    } ],
+    "name" : "FK_Orders_CustomerIDReference"
+  } ],
+  "sourceDatasets" : [ ]
+}

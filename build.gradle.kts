@@ -1,89 +1,29 @@
-/*
- * This work is marked with CC0 1.0 Universal.
- * To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
- *
- */
-
 plugins {
     java
     distribution
-    alias(libs.plugins.spotless)
+    id("com.diffplug.spotless") version "6.25.0"
+    id("com.github.spotbugs") version "6.0.14"
 }
 
 group = "zeenea.connector.example"
 version = System.getenv("VERSION") ?: "dev"
-description = "Example Zeenea Connector Plugin"
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    /*
-     * Includes the public-connector-sdk as a jar file in the lib folder.
-     * Currently, the maven repository containing the jar is private.
-     * So the dependency can be added as a file in the project.
-     * You will find the jar in the public-connector-sdk-version.jar in the folder lib of the scanner.
-     */
-    val jarFiles = fileTree("${rootDir}/lib") {
-        include("*.jar")
-        exclude("*-javadoc.jar")
-    }
-    compileOnly(jarFiles)
-    testImplementation(jarFiles)
-
-    /*
-     * Include the PF4J library that manage the plugins.
-     * It should not be included in the release by used by the annotation processing.
-     */
-    compileOnly(libs.pf4j)
-    testImplementation(libs.pf4j)
-    annotationProcessor(libs.pf4j)
-
-    /*
-     * Jackson library for JSON parsing.
-     */
-    implementation(platform(libs.jackson.bom))
-    implementation(libs.jackson.core)
-    implementation(libs.jackson.databind)
-    implementation(libs.jackson.datatype.jdk8)
-    implementation(libs.jackson.datatype.jsr310)
-
-    /*
-     * Extra code need for the implementation of the example.
-     */
-    implementation(project(":log"))
-    implementation(project(":filter"))
-    implementation(project(":custom-property"))
-
-    /*
-     * Tests dependencies.
-     */
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.api)
-    testImplementation(libs.junit.params)
-    testRuntimeOnly(libs.junit.engine)
-    testImplementation(libs.assertj)
-
-    /*
-     * Test logs dependencies.
-     */
-    testRuntimeOnly(libs.jcl.over.slf4j)
-    testRuntimeOnly(libs.logback.classic)
-}
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
-    }
 }
 
 spotless {
     java {
+        targetExclude("build\\generated\\**\\*.java")
         googleJavaFormat()
-        targetExclude("build/generated/**")
+    }
+}
+
+spotbugs {
+    val excludeFile = file("${rootDir}/spotbug-exclude.xml")
+    if (excludeFile.exists()) {
+        excludeFilter.set(excludeFile)
     }
 }
 
@@ -98,19 +38,10 @@ tasks.test {
     useJUnitPlatform()
 }
 
-tasks.jar {
-    manifest {
-        attributes(
-            "Implementation-Title" to project.description,
-            "Implementation-Version" to project.version,
-            "Implementation-Vendor" to "Zeenea <support@zeenea.com>"
-        )
-    }
+tasks.distTar {
+    enabled = false
 }
 
-/*
-* Define the plugin layout.
-*/
 distributions {
     main {
         contents {
@@ -122,7 +53,6 @@ distributions {
             }
             from(configurations.runtimeClasspath) {
                 into("lib")
-                // We explicitly exclude these libraries which could have been added by recursive dependencies.
                 exclude("slf4j-api*.jar")
                 exclude("commons-logging*.jar")
             }
@@ -135,7 +65,84 @@ distributions {
     }
 }
 
-tasks.distTar {
-    enabled = false
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        name = "Zeenea Connector SDK"
+        url = uri("https://maven.pkg.github.com/zeenea/*")
+        credentials {
+            username =
+                System.getenv("GITHUB_ACTOR") ?: project.findProperty("github.actor") as String?
+            password =
+                System.getenv("GITHUB_TOKEN") ?: project.findProperty("github.token") as String?
+        }
+    }
 }
 
+tasks.test {
+    systemProperty("approvaltests.approvals.baseDirectory", "src/test/resources")
+}
+
+dependencies {
+    // Zeenea public SDK
+    val publicConnectorSdkVersion: String by project
+    compileOnly(group = "zeenea", name = "public-connector-sdk", version = publicConnectorSdkVersion)
+    testImplementation(group = "zeenea", name = "public-connector-sdk", version = publicConnectorSdkVersion)
+
+    val pf4jVersion: String by project
+    annotationProcessor(group = "org.pf4j", name = "pf4j", version = pf4jVersion)
+
+    val jetbrainsAnnotationsVersion: String by project
+    compileOnly(
+        group = "org.jetbrains",
+        name = "annotations",
+        version = jetbrainsAnnotationsVersion
+    )
+
+    val javaTuples: String by project
+    implementation(
+        group = "org.javatuples",
+        name = "javatuples",
+        version = javaTuples
+    )
+
+    val spotbugsAnnotations = "com.github.spotbugs:spotbugs-annotations:${spotbugs.toolVersion.get()}"
+    compileOnly(spotbugsAnnotations)
+    testImplementation(spotbugsAnnotations)
+
+    val lombokVersion: String by project
+    compileOnly(group = "org.projectlombok", name = "lombok", version = lombokVersion)
+    annotationProcessor(group = "org.projectlombok", name = "lombok", version = lombokVersion)
+
+    // Logs
+    val slf4jVersion: String by project
+    testRuntimeOnly(group = "org.slf4j", name = "jcl-over-slf4j", version = slf4jVersion)
+
+    val logbackVersion: String by project
+    testRuntimeOnly(group = "ch.qos.logback", name = "logback-classic", version = logbackVersion)
+
+    /*
+     * Tests
+     */
+    val junitVersion: String by project
+    testImplementation(platform("org.junit:junit-bom:${junitVersion}"))
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-api")
+    testImplementation(group = "org.junit.jupiter", name = "junit-jupiter-params")
+    testRuntimeOnly(group = "org.junit.jupiter", name = "junit-jupiter-engine")
+
+    val assertjVersion: String by project
+    testImplementation(group = "org.assertj", name = "assertj-core", version = assertjVersion)
+
+    val mockitoVersion: String by project
+    testImplementation(group = "org.mockito", name = "mockito-core", version = mockitoVersion)
+    testImplementation(group = "org.mockito", name = "mockito-junit-jupiter", version = mockitoVersion)
+
+    val jacksonVersion: String by project
+    testImplementation(group = "com.fasterxml.jackson.core", name = "jackson-databind", version = jacksonVersion)
+    testImplementation(group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version = jacksonVersion)
+    testImplementation(group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jdk8", version = jacksonVersion)
+
+    val approvaltestsVersion: String by project
+    testImplementation(group = "com.approvaltests", name = "approvaltests", version = approvaltestsVersion)
+}

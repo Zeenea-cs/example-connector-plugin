@@ -1,0 +1,112 @@
+{
+  "id" : {
+    "identificationProperties" : [ {
+      "key" : "databaseId",
+      "value" : "96813f62-80a7-4024-bd28-b563cd22bee5"
+    }, {
+      "key" : "id",
+      "value" : "b510a18e-9cda-4140-983e-5bfdfdbfa6b3"
+    } ]
+  },
+  "name" : "SalesPerMonth",
+  "description" : null,
+  "properties" : {
+    "Database" : {
+      "value" : "SalesDB"
+    },
+    "instant" : {
+      "value" : 897681.600000000
+    },
+    "longText" : {
+      "value" : "This is a long text property value example."
+    },
+    "number" : {
+      "value" : 42
+    },
+    "string" : {
+      "value" : "This is a string property value example."
+    },
+    "tag" : {
+      "value" : [ "tag1", "tag2", "tag3" ]
+    },
+    "url" : {
+      "value" : "https://www.example.com/path/to/item",
+      "label" : null
+    }
+  },
+  "contacts" : [ {
+    "email" : "example.of@email.com",
+    "name" : "name",
+    "phoneNumber" : "phoneNumber",
+    "role" : "role"
+  } ],
+  "glossaryRefs" : [ ],
+  "customItemRefs" : [ ],
+  "fields" : [ {
+    "id" : {
+      "identificationProperties" : [ {
+        "key" : "fieldName",
+        "value" : "Month"
+      } ]
+    },
+    "name" : "Month",
+    "dataType" : "String",
+    "nativeType" : "VARCHAR",
+    "nativeIndex" : 0,
+    "nullable" : false,
+    "multivalued" : false,
+    "description" : null,
+    "properties" : { },
+    "glossaryRefs" : [ ],
+    "customItemRefs" : [ ],
+    "sourceField" : [ ]
+  }, {
+    "id" : {
+      "identificationProperties" : [ {
+        "key" : "fieldName",
+        "value" : "TotalSales"
+      } ]
+    },
+    "name" : "TotalSales",
+    "dataType" : "Float",
+    "nativeType" : "DECIMAL",
+    "nativeIndex" : 1,
+    "nullable" : false,
+    "multivalued" : false,
+    "description" : null,
+    "properties" : {
+      "Formula" : {
+        "value" : "SUM(SaleAmount)"
+      }
+    },
+    "glossaryRefs" : [ ],
+    "customItemRefs" : [ ],
+    "sourceField" : [ {
+      "itemIdentifier" : {
+        "identificationProperties" : [ {
+          "key" : "databaseId",
+          "value" : "96813f62-80a7-4024-bd28-b563cd22bee5"
+        }, {
+          "key" : "id",
+          "value" : "f1e2d3c4-b5a6-7890-abcd-ef0987654321"
+        }, {
+          "key" : "fieldName",
+          "value" : "SaleAmount"
+        } ]
+      },
+      "dataSourceIdentifier" : null
+    } ]
+  } ],
+  "sourceDatasets" : [ {
+    "itemIdentifier" : {
+      "identificationProperties" : [ {
+        "key" : "databaseId",
+        "value" : "96813f62-80a7-4024-bd28-b563cd22bee5"
+      }, {
+        "key" : "id",
+        "value" : "f1e2d3c4-b5a6-7890-abcd-ef0987654321"
+      } ]
+    },
+    "dataSourceIdentifier" : null
+  } ]
+}
